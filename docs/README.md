@@ -9,3 +9,4 @@ GitHub Free: 6 hours per job
 GitHub Pro: 6 hours per job
 GitHub Team: 6 hours per job
 GitHub Enterprise Cloud: 6 hours per job
+

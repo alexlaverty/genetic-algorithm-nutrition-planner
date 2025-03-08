@@ -16,10 +16,15 @@ def get_next_run_number():
     df = pd.read_csv('optimization_history.csv')
     return df['run_number'].max() + 1 if not df.empty else 1
 
-def optimize_nutrition(food_df, nutrient_mapping, rdi_targets,
-                       number_of_meals=1, meal_number=1,
-                       randomness_factor=0.3, population_size=50,
-                       generations=100):
+def optimize_nutrition(food_df,
+                       nutrient_mapping,
+                       rdi_targets,
+                       number_of_meals=1,
+                       meal_number=1,
+                       randomness_factor=0.3,
+                       population_size=50,
+                       generations=100,
+                       diet_type='all'):
     """
     Optimize food selection to meet RDI targets while maintaining variety,
     scaled for a specific meal in a multi-meal day.
@@ -187,7 +192,8 @@ def optimize_nutrition(food_df, nutrient_mapping, rdi_targets,
                                         number_of_meals,
                                         meal_number,
                                         generations=generations,
-                                        execution_time=execution_time)
+                                        execution_time=execution_time,
+                                        diet_type=diet_type)
 
     print(f"Generation {generation + 1}/{generations}, Best Score: {best_score}")
     print(f"Report saved to: {report_file}")
@@ -244,11 +250,8 @@ def _calculate_nutrition_score(current, targets):
 
 def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
                           number_of_meals=3, meal_number=1, generations=100,
-                          execution_time=0):
+                          execution_time=0, diet_type='all'):
     """Save a detailed nutrition report as JSON."""
-    # Create recipes directory if it doesn't exist
-    if not os.path.exists('recipes'):
-        os.makedirs('recipes')
 
     # Scale RDI for a single meal
     meal_rdi = {nutrient: float(target) / number_of_meals for nutrient, target in rdi.items()}
@@ -266,6 +269,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
     report = {
         "meal_info": {
             "run_number": int(run_number),
+            "diet_type": str(diet_type),
             "target_percentage": float(100/number_of_meals),
             "optimization_score": float(score),
             "generations": int(generations),
@@ -301,7 +305,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
         }
     }
 
-    filename = f"recipes/meal_{run_number}_{timestamp}.json"
+    filename = f"recipes/json/meal_{run_number}_{timestamp}.json"
 
     with open(filename, 'w') as f:
         json.dump(report, f, indent=2)
@@ -409,59 +413,95 @@ def generate_index():
 
     markdown = "# Meal Plan Index\n\n"
     markdown += "Generated on: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "\n\n"
-    markdown += "| Run # | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |\n"
-    markdown += "|-------|-------|-------|----------------------|------------|----------|----------|\n"
+    markdown += "| Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |\n"
+    markdown += "|-------|------|-------|-------|----------------------|------------|----------|----------|\n"
 
     for meal in meals:
-        markdown += f"| {meal['run_number']} | {meal['optimization_score']:.2f} | "
+        markdown += f"| {meal['run_number']} | {meal['diet_type']} | {meal['optimization_score']:.2f} | "
         markdown += f"{meal['food_items']} | {meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']} | "
         markdown += f"{meal['generations']} | {meal['execution_time']:.1f} | "
-        markdown += f"[{os.path.basename(meal['filename'])}](recipes/{meal['filename']}) |\n"
+        markdown += f"[{os.path.basename(meal['filename'])}](recipes/json/{meal['filename']}) |\n"
 
     # Save the index file
     with open("README.md", "w") as f:
         f.write(markdown)
 
+def init_directories():
+    """Initialize directory structure for recipes and output files."""
+    base_dir = 'recipes'
+    subdirs = ['json', 'html']
 
+    for subdir in subdirs:
+        dir_path = os.path.join(base_dir, subdir)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+            print(f"Created directory: {dir_path}")
 
 if __name__ == "__main__":
     start_time = time.time()
+    init_directories()
     # Load the Excel file
     file_path = "Release 2 - Nutrient file.xlsx"
     df = pd.read_excel(file_path, sheet_name="All solids & liquids per 100g")
-
-    # Randomly select between 5-20 foods
-    n_foods = random.randint(5, 20)
-    random_foods = df.sample(n=n_foods)
-    print(f"Selected {n_foods} random foods for optimization")
-
-    generations = random.randint(10, 300)
-    # generations = 10
-    print(f"Selected {generations} for number of generations")
-
-    # Clean column names
-    random_foods.columns = [clean_column_name(col) for
-                            col in random_foods.columns]
 
     # Load the RDI data
     with open('rdi.json', 'r') as f:
         nutrient_mapping = json.load(f)
 
-    # Number of meals per day
+    # Settings that will be the same for both runs
     number_of_meals = 1
-
-    # Run the optimizer for a specific meal (e.g., meal 1 of 1)
     meal_number = 1
-    rdi_values = {nutrient: details['rdi'] for nutrient,
-                  details in nutrient_mapping.items()}
+    rdi_values = {nutrient: details['rdi'] for nutrient, details in nutrient_mapping.items()}
 
-    result = optimize_nutrition(food_df=random_foods,
-                              nutrient_mapping=nutrient_mapping,
-                              rdi_targets=rdi_values,
-                              number_of_meals=number_of_meals,
-                              meal_number=meal_number,
-                              randomness_factor=0.4,
-                              population_size=100,
-                              generations=generations)
+    # Run twice - once with all foods, once with vegan foods
+    for run_type in ['all', 'vegan']:
+        print(f"\n=== Starting {run_type.upper()} foods optimization ===")
 
+        # Filter foods if vegan
+        working_df = df.copy()
+        if run_type == 'vegan':
+            try:
+                with open('vegan.json', 'r') as f:
+                    exclusion_config = json.load(f)
+                    excluded_terms = exclusion_config['excluded_terms']
+
+                # Create a filter mask for non-excluded foods
+                mask = ~working_df['Food Name'].str.lower().apply(
+                    lambda x: any(term.lower() in x for term in excluded_terms)
+                )
+                working_df = working_df[mask]
+                print(f"Excluded {len(df) - len(working_df)} non-vegan foods")
+            except FileNotFoundError:
+                print("Warning: vegan.json not found, skipping vegan optimization")
+                continue
+
+        # Randomly select between 5-20 foods
+        n_foods = random.randint(5, 20)
+        random_foods = working_df.sample(n=n_foods)
+        print(f"Selected {n_foods} random foods for optimization")
+
+        # Generate random number of generations
+        generations = random.randint(10, 300)
+        generations = 3
+        print(f"Selected {generations} for number of generations")
+
+        # Clean column names
+        random_foods.columns = [clean_column_name(col) for col in random_foods.columns]
+
+        # Run optimization
+        result = optimize_nutrition(
+            food_df=random_foods,
+            nutrient_mapping=nutrient_mapping,
+            rdi_targets=rdi_values,
+            number_of_meals=number_of_meals,
+            meal_number=meal_number,
+            randomness_factor=0.4,
+            population_size=100,
+            generations=generations,
+            diet_type=run_type
+        )
+
+        print(f"=== Completed {run_type.upper()} foods optimization ===\n")
+
+    # Generate final index
     generate_index()
