@@ -379,7 +379,7 @@ def generate_index():
     meals = []
 
     # Read all JSON files in the recipes directory
-    recipes_dir = "recipes"
+    recipes_dir = "recipes/json"
     for filename in os.listdir(recipes_dir):
         if filename.endswith(".json"):
             filepath = os.path.join(recipes_dir, filename)
@@ -392,12 +392,16 @@ def generate_index():
                 food_items = len(data["food_quantities"])
 
                 # Parse timestamp from filename (format: meal_15_20250308_215231.json)
-                timestamp_str = '_'.join(filename.split('_')[2:]).split('.')[0]  # Gets "20250308_215231"
+                timestamp_str = '_'.join(filename.split('_')[2:]).split('.')[0]
                 timestamp = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
-                #print(meal_info)
+
+                # Get diet type with fallback to 'all' if not present
+                diet_type = meal_info.get("diet_type", "all")
+
                 meals.append({
                     "filename": filename,
                     "run_number": meal_info["run_number"],
+                    "diet_type": diet_type,
                     "optimization_score": meal_info["optimization_score"],
                     "nutrients_ok": summary["nutrients_at_good_levels"],
                     "nutrients_low": summary["nutrients_below_target"],
@@ -482,7 +486,7 @@ if __name__ == "__main__":
 
         # Generate random number of generations
         generations = random.randint(10, 300)
-        # generations = 3
+        generations = 3
         print(f"Selected {generations} for number of generations")
 
         # Clean column names
