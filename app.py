@@ -611,7 +611,7 @@ if __name__ == "__main__":
 
         # Generate random number of generations
         generations = random.randint(10, 300)
-        generations = 3
+        # generations = 3
         print(f"Selected {generations} for number of generations")
 
         # Clean column names
