@@ -172,8 +172,10 @@ def optimize_nutrition(food_df, nutrient_mapping, rdi_targets,
                 child = mutate_solution(child)
             new_population.append(child)
         population = new_population
+        print('.', end='', flush=True)
 
     execution_time = time.time() - start_time  # Calculate total time
+    print()
     print(f"Execution time: {execution_time:.2f} seconds")
 
     # Save the nutrition report instead of printing it
@@ -209,12 +211,32 @@ def _calculate_nutrition_score(current, targets):
             score += ((target - current.get(nutrient, 0)) / target) ** 2 * 1.5
         else:
             # For vitamins and minerals, we're usually more tolerant of excess
-            if nutrient in ['vitamin_a', 'vitamin_c', 'vitamin_e', 'vitamin_k', 'vitamin_b1', 'vitamin_b2',
-                           'vitamin_b3', 'vitamin_b5', 'vitamin_b6', 'vitamin_b12', 'folate']:
+            if nutrient in [
+                'Vitamin A retinol equivalents (ug)',
+                'Vitamin C (mg)',
+                'Vitamin E (mg)',
+                'Vitamin D3 equivalents (ug)',
+                'Thiamin (B1) (mg)',
+                'Riboflavin (B2) (mg)',
+                'Niacin (B3) (mg)',
+                'Pantothenic acid (B5) (mg)',
+                'Pyridoxine (B6) (mg)',
+                'Biotin (B7) (ug)',
+                'Cobalamin (B12) (ug)',
+                'Total folates (ug)'
+            ]:
                 # Be more lenient for water-soluble vitamins (less penalty for excess)
-                excess_factor = 0.5 if nutrient in ['vitamin_c', 'vitamin_b1', 'vitamin_b2',
-                                                   'vitamin_b3', 'vitamin_b5', 'vitamin_b6',
-                                                   'vitamin_b12', 'folate'] else 0.8
+                excess_factor = 0.5 if nutrient in [
+                    'Vitamin C (mg)',
+                    'Thiamin (B1) (mg)',
+                    'Riboflavin (B2) (mg)',
+                    'Niacin (B3) (mg)',
+                    'Pantothenic acid (B5) (mg)',
+                    'Pyridoxine (B6) (mg)',
+                    'Biotin (B7) (ug)',
+                    'Cobalamin (B12) (ug)',
+                    'Total folates (ug)'
+                ] else 0.8
                 score += ((current.get(nutrient, 0) - target) / target) ** 2 * excess_factor
             else:
                 score += ((current.get(nutrient, 0) - target) / target) ** 2
@@ -327,12 +349,15 @@ def print_nutrition_report(foods_consumed, food_data, rdi, number_of_meals=3, me
 
 def _get_unit(nutrient):
     """Get the appropriate unit for a nutrient."""
-    if nutrient == 'protein' or nutrient == 'fiber':
-        return 'g'
-    elif nutrient in ['vitamin_a', 'vitamin_k', 'folate']:
-        return 'μg'
-    else:
+    # Look for unit in parentheses at end of nutrient name
+    if '(mg)' in nutrient:
         return 'mg'
+    elif '(ug)' in nutrient:
+        return 'μg'
+    elif '(g)' in nutrient:
+        return 'g'
+    else:
+        return ''  # Default case
 
 # Add this function before optimize_nutrition
 def clean_column_name(col_name):
@@ -406,7 +431,7 @@ if __name__ == "__main__":
     print(f"Selected {n_foods} random foods for optimization")
 
     generations = random.randint(100, 300)
-    #generations = 3
+    # generations = 10
     print(f"Selected {generations} for number of generations")
 
     # Clean column names
