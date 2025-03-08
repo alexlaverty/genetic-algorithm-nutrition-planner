@@ -2,6 +2,9 @@ name: Optimize Nutrition
 
 on:
   workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - main  # or master, depending on your default branch name
   schedule:
     - cron: '0 * * * *'  # Run every hour
 
