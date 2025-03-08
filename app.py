@@ -376,7 +376,7 @@ def generate_index():
     for meal in meals:
         markdown += f"| {meal['run_number']} | {meal['optimization_score']:.2f} | "
         markdown += f"{meal['food_items']} | {meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']} | "
-        markdown += f"{meal['timestamp'].strftime('%Y-%m-%d %H:%M')} | [{os.path.basename(meal['filename'])}]({meal['filename']}) |\n"
+        markdown += f"{meal['timestamp'].strftime('%Y-%m-%d %H:%M')} | [{os.path.basename(meal['filename'])}](recipes/{meal['filename']}) |\n"
 
     # Save the index file
     with open("README.md", "w") as f:
