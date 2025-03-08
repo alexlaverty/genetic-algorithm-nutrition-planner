@@ -54,11 +54,11 @@ jobs:
         # Create recipes directory if it doesn't exist
         mkdir -p recipes
 
-        # Stage ALL changes including untracked files
-        git add -A
-
-        # Pull latest changes
+        # Pull latest changes FIRST
         git pull origin main --rebase
+
+        # THEN stage ALL changes including untracked files
+        git add -A
 
         # Commit all changes
         git commit -m "Auto-generate new meal plan [skip ci]"
