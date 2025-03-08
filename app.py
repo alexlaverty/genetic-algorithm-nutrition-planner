@@ -435,8 +435,8 @@ if __name__ == "__main__":
     random_foods = df.sample(n=n_foods)
     print(f"Selected {n_foods} random foods for optimization")
 
-    generations = random.randint(100, 300)
-    generations = 10
+    generations = random.randint(10, 300)
+    # generations = 10
     print(f"Selected {generations} for number of generations")
 
     # Clean column names
