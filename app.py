@@ -1,9 +1,10 @@
-import random
-import numpy as np
-import pandas as pd
-import json
-import os
 from datetime import datetime
+import json
+import numpy as np
+import os
+import pandas as pd
+import random
+import time
 
 # Save to JSON file with timestamp
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -17,7 +18,8 @@ def get_next_run_number():
 
 def optimize_nutrition(food_df, nutrient_mapping, rdi_targets,
                        number_of_meals=1, meal_number=1,
-                       randomness_factor=0.3, population_size=50):
+                       randomness_factor=0.3, population_size=50,
+                       generations=100):
     """
     Optimize food selection to meet RDI targets while maintaining variety,
     scaled for a specific meal in a multi-meal day.
@@ -158,10 +160,6 @@ def optimize_nutrition(food_df, nutrient_mapping, rdi_targets,
         else:
             generation_data.to_csv('optimization_history.csv', index=False)
 
-        # Echo out the current best score and generation
-        # print(f"====== Generation {generation + 1}/{generations}, Best Score: {best_score} ======")
-        # print_nutrition_report(best_solution, available_foods, rdi_targets, number_of_meals, meal_number)
-
         # Select the best solutions
         population = [sol for _, sol in scores[:population_size // 2]]
 
@@ -175,6 +173,9 @@ def optimize_nutrition(food_df, nutrient_mapping, rdi_targets,
             new_population.append(child)
         population = new_population
 
+    execution_time = time.time() - start_time  # Calculate total time
+    print(f"Execution time: {execution_time:.2f} seconds")
+
     # Save the nutrition report instead of printing it
     report_file = save_nutrition_report(best_solution,
                                         available_foods,
@@ -183,7 +184,8 @@ def optimize_nutrition(food_df, nutrient_mapping, rdi_targets,
                                         run_number,  # Add run_number parameter
                                         number_of_meals,
                                         meal_number,
-                                        generations=100)
+                                        generations=generations,
+                                        execution_time=execution_time)
 
     print(f"Generation {generation + 1}/{generations}, Best Score: {best_score}")
     print(f"Report saved to: {report_file}")
@@ -219,7 +221,8 @@ def _calculate_nutrition_score(current, targets):
     return score
 
 def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
-                          number_of_meals=3, meal_number=1, generations=100):
+                          number_of_meals=3, meal_number=1, generations=100,
+                          execution_time=0):
     """Save a detailed nutrition report as JSON."""
     # Create recipes directory if it doesn't exist
     if not os.path.exists('recipes'):
@@ -241,11 +244,11 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
     report = {
         "meal_info": {
             "run_number": int(run_number),
-            "meal_number": int(meal_number),
-            "total_meals": int(number_of_meals),
             "target_percentage": float(100/number_of_meals),
             "optimization_score": float(score),
-            "generations": int(generations)
+            "generations": int(generations),
+            "number_of_foods": len(foods_consumed),
+            "execution_time_seconds": float(execution_time)
         },
         "food_quantities": {
             str(food): f"{float(amount):.1f}g" for food, amount in foods_consumed.items()
@@ -337,6 +340,7 @@ def clean_column_name(col_name):
     return col_name.strip().replace('\n', '')
 
 def generate_index():
+    print(f"Generating README.md")
     # Create a list to store meal data
     meals = []
 
@@ -356,7 +360,7 @@ def generate_index():
                 # Parse timestamp from filename (format: meal_15_20250308_215231.json)
                 timestamp_str = '_'.join(filename.split('_')[2:]).split('.')[0]  # Gets "20250308_215231"
                 timestamp = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
-
+                #print(meal_info)
                 meals.append({
                     "filename": filename,
                     "run_number": meal_info["run_number"],
@@ -366,7 +370,8 @@ def generate_index():
                     "nutrients_high": summary["nutrients_above_target"],
                     "food_items": food_items,
                     "timestamp": timestamp,
-                    "generations": int(generations)
+                    "generations": meal_info["generations"],
+                    "execution_time": meal_info["execution_time_seconds"]
                 })
 
     # Sort meals by optimization score (ascending - better scores first)
@@ -374,22 +379,23 @@ def generate_index():
 
     markdown = "# Meal Plan Index\n\n"
     markdown += "Generated on: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "\n\n"
-    markdown += "| Run # | Score | Foods | Nutrients (OK/Low/High) | Generations | Filename |\n"
-    markdown += "|-------|-------|-------|----------------------|------------|------|----------|\n"
+    markdown += "| Run # | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |\n"
+    markdown += "|-------|-------|-------|----------------------|------------|----------|----------|\n"
 
     for meal in meals:
         markdown += f"| {meal['run_number']} | {meal['optimization_score']:.2f} | "
         markdown += f"{meal['food_items']} | {meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']} | "
-        markdown += f"{meal_info['generations']} | "  # Add generations column
+        markdown += f"{meal['generations']} | {meal['execution_time']:.1f} | "
         markdown += f"[{os.path.basename(meal['filename'])}](recipes/{meal['filename']}) |\n"
 
     # Save the index file
     with open("README.md", "w") as f:
         f.write(markdown)
 
-    print(f"Index generated at README.md")
+
 
 if __name__ == "__main__":
+    start_time = time.time()
     # Load the Excel file
     file_path = "Release 2 - Nutrient file.xlsx"
     df = pd.read_excel(file_path, sheet_name="All solids & liquids per 100g")
@@ -411,15 +417,6 @@ if __name__ == "__main__":
     with open('rdi.json', 'r') as f:
         nutrient_mapping = json.load(f)
 
-    # Debug print column matching
-    #print("\nChecking nutrient mapping matches:")
-    # for column_name in nutrient_mapping.keys():
-    #     found = column_name in random_foods.columns
-    #     print(f"{column_name} - {'Found' if found else 'Not found'}")
-    #     if found:
-    #         sample_value = random_foods.iloc[0][column_name]
-    #         print(f"Sample value: {sample_value}")
-
     # Number of meals per day
     number_of_meals = 1
 
@@ -434,6 +431,7 @@ if __name__ == "__main__":
                               number_of_meals=number_of_meals,
                               meal_number=meal_number,
                               randomness_factor=0.4,
-                              population_size=100)
+                              population_size=100,
+                              generations=generations)
 
     generate_index()
