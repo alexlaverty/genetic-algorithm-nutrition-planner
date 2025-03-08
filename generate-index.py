@@ -49,10 +49,10 @@ def generate_index():
         markdown += f"{meal['timestamp'].strftime('%Y-%m-%d %H:%M')} | [{os.path.basename(meal['filename'])}]({meal['filename']}) |\n"
 
     # Save the index file
-    with open("index.md", "w") as f:
+    with open("README.md", "w") as f:
         f.write(markdown)
 
-    print(f"Index generated at index.md")
+    print(f"Index generated at README.md")
 
 if __name__ == "__main__":
     generate_index()

@@ -1,2 +1,9 @@
-# genetic-algorithm-nutrition-planner
-AI-driven genetic algorithm to generate optimized meal plans that meet daily micronutrient requirements.
+# Meal Plan Index
+
+Generated on: 2025-03-08 21:59:21
+
+| Run # | Score | Foods | Nutrients (OK/Low/High) | Date | Filename |
+|-------|-------|-------|----------------------|------|----------|
+| 16 | 291.74 | 10 | 4/21/6 | 2025-03-08 21:54 | [meal_16_20250308_215413.json](meal_16_20250308_215413.json) |
+| 17 | 4946.49 | 10 | 3/26/2 | 2025-03-08 21:54 | [meal_17_20250308_215421.json](meal_17_20250308_215421.json) |
+| 15 | 14525.83 | 10 | 5/25/1 | 2025-03-08 21:52 | [meal_15_20250308_215231.json](meal_15_20250308_215231.json) |
