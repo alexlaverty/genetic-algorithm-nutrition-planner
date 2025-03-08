@@ -431,7 +431,7 @@ if __name__ == "__main__":
     print(f"Selected {n_foods} random foods for optimization")
 
     generations = random.randint(100, 300)
-    # generations = 10
+    generations = 10
     print(f"Selected {generations} for number of generations")
 
     # Clean column names

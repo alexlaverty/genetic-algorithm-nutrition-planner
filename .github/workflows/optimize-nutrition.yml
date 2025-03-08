@@ -46,8 +46,34 @@ jobs:
     - name: Commit and push if changes exist
       if: steps.git-check.outputs.changes > 0
       run: |
+        # Configure git pull strategy
+        git config pull.rebase true
+
+        # Pull latest changes with rebase
+        git pull origin main
+
+        # Add and commit changes
         git add recipes/* README.md optimization_history.csv
         git commit -m "Auto-generate new meal plan [skip ci]"
-        git push origin main
+
+        # Try pushing up to 3 times
+        max_attempts=3
+        attempt=1
+
+        while [ $attempt -le $max_attempts ]; do
+          echo "Push attempt $attempt of $max_attempts"
+          if git pull --rebase origin main && git push origin main; then
+            echo "Successfully pushed changes"
+            break
+          else
+            if [ $attempt -eq $max_attempts ]; then
+              echo "Failed to push after $max_attempts attempts"
+              exit 1
+            fi
+            echo "Push failed, retrying..."
+            sleep 5
+            attempt=$((attempt + 1))
+          fi
+        done
       env:
         GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
