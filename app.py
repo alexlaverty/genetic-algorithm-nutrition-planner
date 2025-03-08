@@ -273,7 +273,12 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
             "execution_time_seconds": float(execution_time)
         },
         "food_quantities": {
-            str(food): f"{float(amount):.1f}g" for food, amount in foods_consumed.items()
+            str(food): f"{float(amount):.1f}g"
+            for food, amount in sorted(
+                foods_consumed.items(),
+                key=lambda x: float(x[1]),
+                reverse=True
+            )
         },
         "nutrition_profile": {
             str(nutrient): {
