@@ -46,23 +46,33 @@ jobs:
     - name: Commit and push if changes exist
       if: steps.git-check.outputs.changes > 0
       run: |
-        # Configure git pull strategy
+        # Configure git
         git config pull.rebase true
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
 
-        # Pull latest changes with rebase
+        # Stage all changes first
+        git add recipes/* README.md optimization_history.csv
+
+        # Stash any changes
+        git stash
+
+        # Pull latest changes
         git pull origin main
 
-        # Add and commit changes
-        git add recipes/* README.md optimization_history.csv
+        # Pop stashed changes
+        git stash pop
+
+        # Commit changes
         git commit -m "Auto-generate new meal plan [skip ci]"
 
-        # Try pushing up to 3 times
+        # Push with retry logic
         max_attempts=3
         attempt=1
 
         while [ $attempt -le $max_attempts ]; do
           echo "Push attempt $attempt of $max_attempts"
-          if git pull --rebase origin main && git push origin main; then
+          if git push origin main; then
             echo "Successfully pushed changes"
             break
           else
@@ -73,6 +83,7 @@ jobs:
             echo "Push failed, retrying..."
             sleep 5
             attempt=$((attempt + 1))
+            git pull --rebase origin main
           fi
         done
       env:
