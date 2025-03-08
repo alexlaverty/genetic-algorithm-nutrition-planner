@@ -251,7 +251,7 @@ def _calculate_nutrition_score(current, targets):
 def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
                           number_of_meals=3, meal_number=1, generations=100,
                           execution_time=0, diet_type='all'):
-    """Save a detailed nutrition report as JSON."""
+    """Save a detailed nutrition report as JSON and HTML."""
 
     # Scale RDI for a single meal
     meal_rdi = {nutrient: float(target) / number_of_meals for nutrient, target in rdi.items()}
@@ -265,7 +265,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
                 nutrient_per_gram = float(food_data[food][nutrient]) / float(food_data[food]['density'])
                 final_nutrients[nutrient] += nutrient_per_gram * amount
 
-    # Create report dictionary with explicit float conversions
+    # Create report dictionary
     report = {
         "meal_info": {
             "run_number": int(run_number),
@@ -305,12 +305,80 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
         }
     }
 
-    filename = f"recipes/json/meal_{run_number}_{timestamp}.json"
-
-    with open(filename, 'w') as f:
+    # Save JSON
+    json_filename = f"recipes/json/meal_{run_number}_{timestamp}.json"
+    with open(json_filename, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
 
-    return filename
+    # Generate HTML
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Meal {run_number} - Nutrition Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+        h1, h2 {{ color: #333; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+        th, td {{ padding: 12px; text-align: left; border: 1px solid #ddd; }}
+        th {{ background-color: #f5f5f5; }}
+        tr:nth-child(even) {{ background-color: #f9f9f9; }}
+        .low {{ color: #dc3545; }}
+        .ok {{ color: #28a745; }}
+        .high {{ color: #ffc107; }}
+        .summary {{ background-color: #f8f9fa; padding: 20px; border-radius: 5px; }}
+        .score {{ font-size: 1.2em; font-weight: bold; }}
+    </style>
+</head>
+<body>
+    <h1>Meal {run_number} Nutrition Report</h1>
+
+    <div class="summary">
+        <p><span class="score">Optimization Score: {score:.2f}</span></p>
+        <p>Diet Type: {diet_type}</p>
+        <p>Execution Time: {execution_time:.1f} seconds</p>
+        <p>Generations: {generations}</p>
+        <p>Foods Used: {len(foods_consumed)}</p>
+    </div>
+
+    <h2>Food Quantities</h2>
+    <table>
+        <tr><th>Food</th><th>Amount</th></tr>
+        {''.join(f"<tr><td>{food}</td><td>{amount}</td></tr>"
+                 for food, amount in report['food_quantities'].items())}
+    </table>
+
+    <h2>Nutrition Profile</h2>
+    <table>
+        <tr>
+            <th>Nutrient</th>
+            <th>Amount</th>
+            <th>% of Meal Target</th>
+            <th>% of Daily RDI</th>
+            <th>Status</th>
+        </tr>
+        {''.join(f"<tr><td>{nutrient}</td>"
+                 f"<td>{info['amount']}</td>"
+                 f"<td>{info['meal_percentage']}</td>"
+                 f"<td>{info['daily_percentage']}</td>"
+                 f"<td class='{info['status'].lower()}'>{info['status']}</td></tr>"
+                 for nutrient, info in report['nutrition_profile'].items())}
+    </table>
+
+    <h2>Summary</h2>
+    <div class="summary">
+        <p>Nutrients at good levels: {report['summary']['nutrients_at_good_levels']} of {report['summary']['total_nutrients']}</p>
+        <p>Nutrients below target: {report['summary']['nutrients_below_target']} of {report['summary']['total_nutrients']}</p>
+        <p>Nutrients above target: {report['summary']['nutrients_above_target']} of {report['summary']['total_nutrients']}</p>
+    </div>
+</body>
+</html>"""
+
+    # Save HTML
+    html_filename = f"recipes/html/meal_{run_number}_{timestamp}.html"
+    with open(html_filename, 'w', encoding='utf-8') as f:
+        f.write(html)
+
+    return json_filename
 
 def print_nutrition_report(foods_consumed, food_data, rdi, number_of_meals=3, meal_number=1):
     """Print a detailed nutrition report based on foods consumed."""
@@ -374,8 +442,8 @@ def clean_column_name(col_name):
     return col_name.strip().replace('\n', '')
 
 def generate_index():
-    print(f"Generating README.md")
-    # Create a list to store meal data
+    """Generate both Markdown and HTML index files for meal plans"""
+    print(f"Generating index files...")
     meals = []
 
     # Read all JSON files in the recipes directory
@@ -386,16 +454,12 @@ def generate_index():
             with open(filepath, 'r') as f:
                 data = json.load(f)
 
-                # Extract relevant information
                 meal_info = data["meal_info"]
                 summary = data["summary"]
                 food_items = len(data["food_quantities"])
 
-                # Parse timestamp from filename (format: meal_15_20250308_215231.json)
                 timestamp_str = '_'.join(filename.split('_')[2:]).split('.')[0]
                 timestamp = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
-
-                # Get diet type with fallback to 'all' if not present
                 diet_type = meal_info.get("diet_type", "all")
 
                 meals.append({
@@ -415,20 +479,81 @@ def generate_index():
     # Sort meals by optimization score (ascending - better scores first)
     meals.sort(key=lambda x: x["optimization_score"])
 
+    # Generate Markdown
     markdown = "# Meal Plan Index\n\n"
     markdown += "Generated on: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "\n\n"
     markdown += "| Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |\n"
     markdown += "|-------|------|-------|-------|----------------------|------------|----------|----------|\n"
 
+    # Generate HTML
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Meal Plan Index</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; }}
+        table {{ border-collapse: collapse; width: 100%; }}
+        th, td {{ padding: 8px; text-align: left; border: 1px solid #ddd; }}
+        th {{ background-color: #f2f2f2; }}
+        tr:nth-child(even) {{ background-color: #f9f9f9; }}
+        tr:hover {{ background-color: #f5f5f5; }}
+        .good {{ color: green; }}
+        .warning {{ color: orange; }}
+        .error {{ color: red; }}
+    </style>
+</head>
+<body>
+    <h1>Meal Plan Index</h1>
+    <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    <table>
+        <tr>
+            <th>Run #</th>
+            <th>Diet</th>
+            <th>Score</th>
+            <th>Foods</th>
+            <th>Nutrients (OK/Low/High)</th>
+            <th>Generations</th>
+            <th>Time (s)</th>
+            <th>Details</th>
+        </tr>
+"""
+
     for meal in meals:
+        # Add markdown row
         markdown += f"| {meal['run_number']} | {meal['diet_type']} | {meal['optimization_score']:.2f} | "
         markdown += f"{meal['food_items']} | {meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']} | "
         markdown += f"{meal['generations']} | {meal['execution_time']:.1f} | "
-        markdown += f"[{os.path.basename(meal['filename'])}](recipes/json/{meal['filename']}) |\n"
+        markdown += f"[{os.path.basename(meal['filename'])}](recipes/html/{os.path.splitext(meal['filename'])[0]}.html) |\n"
 
-    # Save the index file
+        # Add HTML row
+        score_class = 'good' if meal['optimization_score'] < 5 else 'warning' if meal['optimization_score'] < 10 else 'error'
+        html += f"""        <tr>
+            <td>{meal['run_number']}</td>
+            <td>{meal['diet_type']}</td>
+            <td class="{score_class}">{meal['optimization_score']:.2f}</td>
+            <td>{meal['food_items']}</td>
+            <td>{meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']}</td>
+            <td>{meal['generations']}</td>
+            <td>{meal['execution_time']:.1f}</td>
+            <td><a href="{os.path.splitext(meal['filename'])[0]}.html">{os.path.basename(meal['filename'])}</a></td>
+        </tr>
+"""
+
+    # Close HTML
+    html += """    </table>
+</body>
+</html>
+"""
+
+    # Save both files
     with open("README.md", "w") as f:
         f.write(markdown)
+
+    with open("recipes/html/index.html", "w") as f:
+        f.write(html)
+
+    print(f"Generated README.md and recipes/html/index.html")
 
 def init_directories():
     """Initialize directory structure for recipes and output files."""
@@ -486,7 +611,7 @@ if __name__ == "__main__":
 
         # Generate random number of generations
         generations = random.randint(10, 300)
-        # generations = 3
+        generations = 3
         print(f"Selected {generations} for number of generations")
 
         # Clean column names
