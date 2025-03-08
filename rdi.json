@@ -3,7 +3,7 @@
     "Chloride (Cl) (mg)": {"rdi": 2300},
     "Chromium (Cr) (ug)": {"rdi": 35},
     "Copper (Cu) (mg)": {"rdi": 0.9, "ul": 10},
-    "Total dietary fibre (g)": {"rdi": 50},
+    "Total dietary fibre (g)": {"rdi": 38},
     "Total folates (ug)": {"rdi": 400, "ul": 1000},
     "Iodine (I) (ug)": {"rdi": 150, "ul": 1100},
     "Iron (Fe) (mg)": {"rdi": 8, "ul": 45},
@@ -27,7 +27,7 @@
     "Vitamin D3 equivalents (ug)": {"rdi": 15, "ul": 100},
     "Vitamin E (mg)": {"rdi": 15, "ul": 1000},
     "Zinc (Zn) (mg)": {"rdi": 11, "ul": 40},
-    "Total saturated fatty acids, equated (g)": {"rdi": 22, "ul": 30},
+    "Total saturated fatty acids, equated (g)": {"rdi": 22, "ul": 24},
     "Cholesterol (mg)": {"rdi": 300, "ul": 300},
-    "Total long chain omega 3 fatty acids, equated (mg)": {"rdi": 1.6, "ul": 5}
+    "Total long chain omega 3 fatty acids, equated (mg)": {"rdi": 1600, "ul": 3000}
 }
