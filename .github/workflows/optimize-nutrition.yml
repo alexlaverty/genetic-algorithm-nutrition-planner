@@ -28,60 +28,31 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas numpy openpyxl
 
-    - name: Configure Git
-      run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
-    - name: Run optimization
-      run: |
-        python app.py
-
-    - name: Check for changes
-      id: git-check
-      run: |
-        git status --porcelain
-        echo "changes=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
-
-    - name: Commit and push if changes exist
-      if: steps.git-check.outputs.changes > 0
+    - name: Run optimization, commit and push changes
       run: |
         # Configure git
-        git config pull.rebase true
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
         # Create recipes directory if it doesn't exist
         mkdir -p recipes
 
-        # Pull latest changes FIRST
-        git pull origin main --rebase
+        # Run your Python script to generate files
+        python app.py
 
-        # THEN stage ALL changes including untracked files
+        # Stage all changes including new files
         git add -A
 
-        # Commit all changes
+        # Check if there are any changes to commit
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+          exit 0
+        fi
+
+        # Commit changes
         git commit -m "Auto-generate new meal plan [skip ci]"
 
-        # Push with retry logic
-        max_attempts=3
-        attempt=1
-
-        while [ $attempt -le $max_attempts ]; do
-          echo "Push attempt $attempt of $max_attempts"
-          if git push origin main; then
-            echo "Successfully pushed changes"
-            break
-          else
-            if [ $attempt -eq $max_attempts ]; then
-              echo "Failed to push after $max_attempts attempts"
-              exit 1
-            fi
-            echo "Push failed, retrying..."
-            sleep 5
-            attempt=$((attempt + 1))
-            git pull --rebase origin main
-          fi
-        done
+        # Simple push without retry logic
+        git push origin main
       env:
         GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
