@@ -51,19 +51,16 @@ jobs:
         git config user.name 'github-actions[bot]'
         git config user.email 'github-actions[bot]@users.noreply.github.com'
 
-        # Stage all changes first
-        git add recipes/* README.md optimization_history.csv
+        # Create recipes directory if it doesn't exist
+        mkdir -p recipes
 
-        # Stash any changes
-        git stash
+        # Stage ALL changes including untracked files
+        git add -A
 
         # Pull latest changes
-        git pull origin main
+        git pull origin main --rebase
 
-        # Pop stashed changes
-        git stash pop
-
-        # Commit changes
+        # Commit all changes
         git commit -m "Auto-generate new meal plan [skip ci]"
 
         # Push with retry logic
