@@ -46,7 +46,7 @@ jobs:
     - name: Commit and push if changes exist
       if: steps.git-check.outputs.changes > 0
       run: |
-        git add recipes/* index.md optimization_history.csv
+        git add recipes/* README.md optimization_history.csv
         git commit -m "Auto-generate new meal plan [skip ci]"
         git push origin main
       env:
