@@ -1,8 +1,10 @@
 {
     "excluded_terms": [
+        "bacon",
         "beef",
         "buffalo",
         "butter",
+        "cake",
         "camel",
         "cheese",
         "chicken",
@@ -11,14 +13,18 @@
         "egg",
         "fish",
         "gelatin",
+        "goat",
         "honey",
         "lamb",
         "milk",
         "pork",
+        "Potato, chips",
         "salami",
+        "sausage",
+        "trout",
+        "turkey",
+        "veal",
         "whey",
-        "yogurt",
-        "cake",
-        "Potato, chips"
+        "yogurt"
     ]
 }
