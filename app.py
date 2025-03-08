@@ -218,9 +218,9 @@ def _calculate_nutrition_score(current, targets):
 
 def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number, number_of_meals=3, meal_number=1):
     """Save a detailed nutrition report as JSON."""
-    # Create results directory if it doesn't exist
-    if not os.path.exists('results'):
-        os.makedirs('results')
+    # Create recipes directory if it doesn't exist
+    if not os.path.exists('recipes'):
+        os.makedirs('recipes')
 
     # Scale RDI for a single meal
     meal_rdi = {nutrient: float(target) / number_of_meals for nutrient, target in rdi.items()}
@@ -267,7 +267,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number, num
         }
     }
 
-    filename = f"results/meal_{run_number}_{timestamp}.json"
+    filename = f"recipes/meal_{run_number}_{timestamp}.json"
 
     with open(filename, 'w') as f:
         json.dump(report, f, indent=2)
@@ -332,6 +332,58 @@ def clean_column_name(col_name):
     """Clean column names by removing extra whitespace and newlines"""
     return col_name.strip().replace('\n', '')
 
+def generate_index():
+    # Create a list to store meal data
+    meals = []
+
+    # Read all JSON files in the recipes directory
+    recipes_dir = "recipes"
+    for filename in os.listdir(recipes_dir):
+        if filename.endswith(".json"):
+            filepath = os.path.join(recipes_dir, filename)
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+
+                # Extract relevant information
+                meal_info = data["meal_info"]
+                summary = data["summary"]
+                food_items = len(data["food_quantities"])
+
+                # Parse timestamp from filename (format: meal_15_20250308_215231.json)
+                timestamp_str = '_'.join(filename.split('_')[2:]).split('.')[0]  # Gets "20250308_215231"
+                timestamp = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
+
+                meals.append({
+                    "filename": filename,
+                    "run_number": meal_info["run_number"],
+                    "optimization_score": meal_info["optimization_score"],
+                    "nutrients_ok": summary["nutrients_at_good_levels"],
+                    "nutrients_low": summary["nutrients_below_target"],
+                    "nutrients_high": summary["nutrients_above_target"],
+                    "food_items": food_items,
+                    "timestamp": timestamp
+                })
+
+    # Sort meals by optimization score (ascending - better scores first)
+    meals.sort(key=lambda x: x["optimization_score"])
+
+    # Generate markdown table
+    markdown = "# Meal Plan Index\n\n"
+    markdown += "Generated on: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "\n\n"
+    markdown += "| Run # | Score | Foods | Nutrients (OK/Low/High) | Date | Filename |\n"
+    markdown += "|-------|-------|-------|----------------------|------|----------|\n"
+
+    for meal in meals:
+        markdown += f"| {meal['run_number']} | {meal['optimization_score']:.2f} | "
+        markdown += f"{meal['food_items']} | {meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']} | "
+        markdown += f"{meal['timestamp'].strftime('%Y-%m-%d %H:%M')} | [{os.path.basename(meal['filename'])}]({meal['filename']}) |\n"
+
+    # Save the index file
+    with open("README.md", "w") as f:
+        f.write(markdown)
+
+    print(f"Index generated at README.md")
+
 if __name__ == "__main__":
     # Load the Excel file
     file_path = "Release 2 - Nutrient file.xlsx"
@@ -372,3 +424,5 @@ if __name__ == "__main__":
                               randomness_factor=0.4,
                               population_size=100,
                               generations=3)
+
+    generate_index()

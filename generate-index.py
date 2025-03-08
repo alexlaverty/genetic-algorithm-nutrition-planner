@@ -6,11 +6,11 @@ def generate_index():
     # Create a list to store meal data
     meals = []
 
-    # Read all JSON files in the results directory
-    results_dir = "results"
-    for filename in os.listdir(results_dir):
+    # Read all JSON files in the recipes directory
+    recipes_dir = "recipes"
+    for filename in os.listdir(recipes_dir):
         if filename.endswith(".json"):
-            filepath = os.path.join(results_dir, filename)
+            filepath = os.path.join(recipes_dir, filename)
             with open(filepath, 'r') as f:
                 data = json.load(f)
 
