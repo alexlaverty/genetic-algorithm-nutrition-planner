@@ -1,0 +1,51 @@
+name: Optimize Nutrition
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: '0 * * * *'  # Run every hour
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for all branches and tags
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas numpy openpyxl
+
+    - name: Configure Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Run optimization
+      run: |
+        python app.py
+
+    - name: Generate index
+      run: |
+        python generate-index.py
+
+    - name: Check for changes
+      id: git-check
+      run: |
+        git status --porcelain
+        echo "changes=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
+
+    - name: Commit and push if changes exist
+      if: steps.git-check.outputs.changes > 0
+      run: |
+        git add recipes/* README.md optimization_history.csv
+        git commit -m "Auto-generate new meal plan [skip ci]"
+        git push

@@ -389,8 +389,10 @@ if __name__ == "__main__":
     file_path = "Release 2 - Nutrient file.xlsx"
     df = pd.read_excel(file_path, sheet_name="All solids & liquids per 100g")
 
-    # Randomly select 10 foods
-    random_foods = df.sample(n=10)
+    # Randomly select between 5-20 foods
+    n_foods = random.randint(5, 20)
+    random_foods = df.sample(n=n_foods)
+    print(f"Selected {n_foods} random foods for optimization")
 
     # Clean column names
     random_foods.columns = [clean_column_name(col) for col in random_foods.columns]
