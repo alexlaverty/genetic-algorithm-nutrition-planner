@@ -1,6 +1,6 @@
 # Meal Plan Index
 
-Generated on: 2025-03-08 23:32:40
+Generated on: 2025-03-09 00:41:36
 
 | Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
 |-------|------|-------|-------|----------------------|------------|----------|----------|
@@ -8,4 +8,6 @@ Generated on: 2025-03-08 23:32:40
 | 72 | vegan | 8.09 | 16 | 17/11/3 | 278 | 1548.1 | [meal_72_20250308_230652.json](recipes/html/meal_72_20250308_230652.html) |
 | 71 | all | 8.48 | 15 | 16/13/2 | 87 | 357.8 | [meal_71_20250308_230652.json](recipes/html/meal_71_20250308_230652.html) |
 | 74 | vegan | 13.55 | 6 | 11/18/2 | 3 | 11.9 | [meal_74_20250309_081523.json](recipes/html/meal_74_20250309_081523.html) |
+| 74 | vegan | 15.39 | 6 | 10/20/1 | 56 | 326.4 | [meal_74_20250309_003610.json](recipes/html/meal_74_20250309_003610.html) |
+| 73 | all | 15.61 | 5 | 8/20/3 | 170 | 236.5 | [meal_73_20250309_003610.json](recipes/html/meal_73_20250309_003610.html) |
 | 70 | vegan | 16.82 | 5 | 7/21/3 | 196 | 651.7 | [meal_70_20250308_220600.json](recipes/html/meal_70_20250308_220600.html) |
