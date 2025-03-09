@@ -49,21 +49,23 @@ jobs:
         # Create a temporary directory for gh-pages content
         tmp_dir=$(mktemp -d)
 
-        # Copy HTML files to temp directory, maintaining flat structure
+        # Copy HTML and SVG files to temp directory
         cp recipes/html/*.html "$tmp_dir/"
+        cp *.svg "$tmp_dir/" || true  # Don't fail if no SVG files exist
 
         # Switch to gh-pages branch
         git fetch origin gh-pages
         git checkout gh-pages || git checkout -b gh-pages
 
-        # Remove existing HTML files
-        rm -f *.html
+        # Remove existing files
+        rm -f *.html *.svg
 
-        # Copy new HTML files from temp directory
+        # Copy new files from temp directory
         cp "$tmp_dir"/*.html .
+        cp "$tmp_dir"/*.svg . || true  # Don't fail if no SVG files exist
 
         # Stage and commit changes
-        git add *.html
+        git add *.html *.svg
 
         # Check if there are changes to commit
         if ! git diff --staged --quiet; then
