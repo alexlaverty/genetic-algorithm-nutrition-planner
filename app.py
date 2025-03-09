@@ -480,7 +480,7 @@ def generate_index():
     meals.sort(key=lambda x: x["optimization_score"])
 
     # Generate Markdown
-    markdown = "# Meal Plan Index\n\n"
+    markdown = "# Genetic Algorithm Optimised Nutrition Recipes\n\n"
     markdown += "Generated on: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "\n\n"
     markdown += "| Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |\n"
     markdown += "|-------|------|-------|-------|----------------------|------------|----------|----------|\n"
@@ -490,7 +490,7 @@ def generate_index():
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Meal Plan Index</title>
+    <title>Genetic Algorithm Optimised Nutrition Recipes</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 40px; }}
         table {{ border-collapse: collapse; width: 100%; }}
@@ -504,7 +504,14 @@ def generate_index():
     </style>
 </head>
 <body>
-    <h1>Meal Plan Index</h1>
+    <h1>Genetic Algorithm Optimised Nutrition Recipes</h1>
+    <div class="description">
+        <p>This table shows meal plans optimized using a genetic algorithm to meet daily nutritional requirements.
+        Each row represents a different optimization run, where lower scores indicate better nutritional balance.
+        The "Diet" column shows the type of diet (all foods, vegan, or whole food plant-based),
+        "Foods" shows how many ingredients were used, and "Nutrients" shows how many nutrients are at good levels,
+        below target, and above target respectively. Click on any row to view the detailed recipe and nutritional analysis.</p>
+    </div>
     <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
     <table>
         <tr>
@@ -515,7 +522,7 @@ def generate_index():
             <th>Nutrients (OK/Low/High)</th>
             <th>Generations</th>
             <th>Time (s)</th>
-            <th>Details</th>
+            <th>View Recipe</th>
         </tr>
 """
 
