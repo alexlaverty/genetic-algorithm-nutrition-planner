@@ -1,10 +1,7 @@
 name: Optimize Nutrition
 
 on:
-  workflow_dispatch:  # Manual trigger
-  # push:
-  #   branches:
-  #     - main  # or master, depending on your default branch name
+  workflow_dispatch:
   schedule:
     - cron: '0 * * * *'  # Run every hour
 
@@ -15,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # Fetch all history for all branches and tags
+        fetch-depth: 0
         token: ${{ secrets.PAT_TOKEN }}
 
     - name: Set up Python
@@ -28,31 +25,53 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas numpy openpyxl
 
-    - name: Run optimization, commit and push changes
+    - name: Run optimization and generate files
       run: |
-        # Configure git
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
         # Create recipes directory if it doesn't exist
         mkdir -p recipes
 
-        # Run your Python script to generate files
+        # Run Python script to generate files
         python app.py
 
-        # Stage all changes including new files
+        # Stage all changes including new files in main branch
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add -A
 
-        # Check if there are any changes to commit
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-          exit 0
+        # Check if there are any changes to commit to main
+        if ! git diff --staged --quiet; then
+          git commit -m "Auto-generate new meal plan [skip ci]"
+          git push origin main
         fi
 
-        # Commit changes
-        git commit -m "Auto-generate new meal plan [skip ci]"
+    - name: Deploy to GitHub Pages
+      run: |
+        # Create a temporary directory for gh-pages content
+        tmp_dir=$(mktemp -d)
 
-        # Simple push without retry logic
-        git push origin main
+        # Copy HTML files to temp directory, maintaining flat structure
+        cp recipes/html/*.html "$tmp_dir/"
+
+        # Switch to gh-pages branch
+        git fetch origin gh-pages
+        git checkout gh-pages || git checkout -b gh-pages
+
+        # Remove existing HTML files
+        rm -f *.html
+
+        # Copy new HTML files from temp directory
+        cp "$tmp_dir"/*.html .
+
+        # Stage and commit changes
+        git add *.html
+
+        # Check if there are changes to commit
+        if ! git diff --staged --quiet; then
+          git commit -m "Update GitHub Pages [skip ci]"
+          git push origin gh-pages
+        fi
+
+        # Clean up
+        rm -rf "$tmp_dir"
       env:
         GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
