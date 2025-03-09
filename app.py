@@ -504,6 +504,7 @@ def generate_index():
     </style>
 </head>
 <body>
+    <a href="https://github.com/alexlaverty/optimize-nutrition" target="_blank"><img src="forkme_right_darkblue_121621.svg" style="position:absolute;top:0;right:0;" alt="Fork me on GitHub"></a>
     <h1>Genetic Algorithm Optimised Nutrition Recipes</h1>
     <div class="description">
         <p>This table shows meal plans optimized using a genetic algorithm to meet daily nutritional requirements.
@@ -620,6 +621,7 @@ if __name__ == "__main__":
 
         # Generate random number of generations
         generations = random.randint(10, 300)
+        generations = 3
         print(f"Selected {generations} for number of generations")
 
         # Clean column names
