@@ -577,20 +577,22 @@ if __name__ == "__main__":
     with open('rdi.json', 'r') as f:
         nutrient_mapping = json.load(f)
 
-    # Settings that will be the same for both runs
+    # Settings that will be the same for all runs
     number_of_meals = 1
     meal_number = 1
     rdi_values = {nutrient: details['rdi'] for nutrient, details in nutrient_mapping.items()}
 
-    # Run twice - once with all foods, once with vegan foods
-    for run_type in ['all', 'vegan']:
+    # Run for each diet type
+    for run_type in ['all', 'vegan', 'wfpb']:
         print(f"\n=== Starting {run_type.upper()} foods optimization ===")
 
-        # Filter foods if vegan
+        # Filter foods based on diet type
         working_df = df.copy()
-        if run_type == 'vegan':
+        if run_type != 'all':
             try:
-                with open('vegan.json', 'r') as f:
+                # Load diet-specific exclusion rules
+                config_file = f'{run_type}.json'
+                with open(config_file, 'r') as f:
                     exclusion_config = json.load(f)
                     excluded_terms = exclusion_config['excluded_terms']
 
@@ -599,9 +601,9 @@ if __name__ == "__main__":
                     lambda x: any(term.lower() in x for term in excluded_terms)
                 )
                 working_df = working_df[mask]
-                print(f"Excluded {len(df) - len(working_df)} non-vegan foods")
+                print(f"Excluded {len(df) - len(working_df)} non-{run_type} foods")
             except FileNotFoundError:
-                print("Warning: vegan.json not found, skipping vegan optimization")
+                print(f"Warning: {config_file} not found, skipping {run_type} optimization")
                 continue
 
         # Randomly select between 5-20 foods
@@ -611,7 +613,6 @@ if __name__ == "__main__":
 
         # Generate random number of generations
         generations = random.randint(10, 300)
-        # generations = 3
         print(f"Selected {generations} for number of generations")
 
         # Clean column names
