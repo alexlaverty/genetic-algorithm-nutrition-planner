@@ -1,9 +1,10 @@
 # Genetic Algorithm Optimised Nutrition Recipes
 
-Generated on: 2025-03-09 11:20:17
+Generated on: 2025-03-09 12:55:31
 
 | Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
 |-------|------|-------|-------|----------------------|------------|----------|----------|
+| 110 | all | 5.15 | 14 | 17/12/2 | 271 | 1047.6 | [meal_110_20250309_121140.json](recipes/html/meal_110_20250309_121140.html) |
 | 75 | all | 6.43 | 16 | 14/16/1 | 42 | 186.5 | [meal_75_20250309_004657.json](recipes/html/meal_75_20250309_004657.html) |
 | 104 | all | 7.13 | 13 | 15/14/2 | 192 | 700.1 | [meal_104_20250309_100658.json](recipes/html/meal_104_20250309_100658.html) |
 | 101 | all | 7.64 | 19 | 11/16/4 | 295 | 1526.4 | [meal_101_20250309_090655.json](recipes/html/meal_101_20250309_090655.html) |
@@ -15,8 +16,10 @@ Generated on: 2025-03-09 11:20:17
 | 93 | vegan | 9.77 | 14 | 10/19/2 | 3 | 26.4 | [meal_93_20250309_070703.json](recipes/html/meal_93_20250309_070703.html) |
 | 99 | vegan | 9.98 | 16 | 14/14/3 | 232 | 1341.2 | [meal_99_20250309_074055.json](recipes/html/meal_99_20250309_074055.html) |
 | 92 | all | 9.99 | 15 | 7/16/8 | 3 | 14.9 | [meal_92_20250309_070703.json](recipes/html/meal_92_20250309_070703.html) |
+| 112 | wfpb | 10.87 | 19 | 15/15/1 | 93 | 2631.6 | [meal_112_20250309_121140.json](recipes/html/meal_112_20250309_121140.html) |
 | 105 | vegan | 10.89 | 16 | 13/16/2 | 80 | 1053.3 | [meal_105_20250309_100658.json](recipes/html/meal_105_20250309_100658.html) |
 | 77 | all | 10.91 | 10 | 11/17/3 | 160 | 442.6 | [meal_77_20250309_013616.json](recipes/html/meal_77_20250309_013616.html) |
+| 111 | vegan | 11.42 | 14 | 8/18/5 | 287 | 2146.8 | [meal_111_20250309_121140.json](recipes/html/meal_111_20250309_121140.html) |
 | 84 | vegan | 12.22 | 7 | 12/18/1 | 3 | 16.0 | [meal_84_20250309_040827.json](recipes/html/meal_84_20250309_040827.html) |
 | 80 | all | 12.31 | 8 | 8/19/4 | 20 | 48.0 | [meal_80_20250309_015608.json](recipes/html/meal_80_20250309_015608.html) |
 | 89 | all | 12.39 | 19 | 8/16/7 | 3 | 18.6 | [meal_89_20250309_060944.json](recipes/html/meal_89_20250309_060944.html) |
