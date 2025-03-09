@@ -1,6 +1,6 @@
 # Genetic Algorithm Optimised Nutrition Recipes
 
-Generated on: 2025-03-09 06:10:26
+Generated on: 2025-03-09 07:07:37
 
 | Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
 |-------|------|-------|-------|----------------------|------------|----------|----------|
@@ -9,6 +9,8 @@ Generated on: 2025-03-09 06:10:26
 | 72 | vegan | 8.09 | 16 | 17/11/3 | 278 | 1548.1 | [meal_72_20250308_230652.json](recipes/html/meal_72_20250308_230652.html) |
 | 71 | all | 8.48 | 15 | 16/13/2 | 87 | 357.8 | [meal_71_20250308_230652.json](recipes/html/meal_71_20250308_230652.html) |
 | 81 | vegan | 8.84 | 19 | 17/13/1 | 235 | 1277.4 | [meal_81_20250309_015608.json](recipes/html/meal_81_20250309_015608.html) |
+| 93 | vegan | 9.77 | 14 | 10/19/2 | 3 | 26.4 | [meal_93_20250309_070703.json](recipes/html/meal_93_20250309_070703.html) |
+| 92 | all | 9.99 | 15 | 7/16/8 | 3 | 14.9 | [meal_92_20250309_070703.json](recipes/html/meal_92_20250309_070703.html) |
 | 77 | all | 10.91 | 10 | 11/17/3 | 160 | 442.6 | [meal_77_20250309_013616.json](recipes/html/meal_77_20250309_013616.html) |
 | 84 | vegan | 12.22 | 7 | 12/18/1 | 3 | 16.0 | [meal_84_20250309_040827.json](recipes/html/meal_84_20250309_040827.html) |
 | 80 | all | 12.31 | 8 | 8/19/4 | 20 | 48.0 | [meal_80_20250309_015608.json](recipes/html/meal_80_20250309_015608.html) |
@@ -25,6 +27,7 @@ Generated on: 2025-03-09 06:10:26
 | 91 | wfpb | 19.17 | 14 | 6/20/5 | 3 | 41.3 | [meal_91_20250309_060944.json](recipes/html/meal_91_20250309_060944.html) |
 | 83 | all | 19.94 | 9 | 7/21/3 | 3 | 10.1 | [meal_83_20250309_040827.json](recipes/html/meal_83_20250309_040827.html) |
 | 85 | wfpb | 21.20 | 12 | 3/26/2 | 3 | 26.2 | [meal_85_20250309_040827.json](recipes/html/meal_85_20250309_040827.html) |
+| 94 | wfpb | 21.69 | 10 | 5/25/1 | 3 | 34.7 | [meal_94_20250309_070703.json](recipes/html/meal_94_20250309_070703.html) |
 | 86 | all | 23.52 | 6 | 2/28/1 | 3 | 7.6 | [meal_86_20250309_050657.json](recipes/html/meal_86_20250309_050657.html) |
 | 88 | wfpb | 26.84 | 7 | 4/26/1 | 3 | 20.1 | [meal_88_20250309_050657.json](recipes/html/meal_88_20250309_050657.html) |
 | 87 | vegan | 31.85 | 8 | 2/28/1 | 3 | 14.2 | [meal_87_20250309_050657.json](recipes/html/meal_87_20250309_050657.html) |
