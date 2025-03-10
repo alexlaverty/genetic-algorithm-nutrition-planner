@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meal 202 - Nutrition Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1, h2 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
+        th { background-color: #f5f5f5; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .low { color: #dc3545; }
+        .ok { color: #28a745; }
+        .high { color: #ffc107; }
+        .summary { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+        .score { font-size: 1.2em; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Meal 202 Nutrition Report</h1>
+
+    <div class="summary">
+        <p><span class="score">Optimization Score: 14.74</span></p>
+        <p>Diet Type: wfpb</p>
+        <p>Execution Time: 763.9 seconds</p>
+        <p>Generations: 186</p>
+        <p>Foods Used: 6</p>
+    </div>
+
+    <h2>Food Quantities</h2>
+    <table>
+        <tr><th>Food</th><th>Amount</th></tr>
+        <tr><td>Beetroot, fresh, purple, peeled, raw</td><td>412.8g</td></tr><tr><td>Tomato, cherry, raw</td><td>385.5g</td></tr><tr><td>Pudding, sticky date, homemade</td><td>335.6g</td></tr><tr><td>Persimmon, peeled, raw</td><td>272.5g</td></tr><tr><td>Lentil, French, hulled, dry</td><td>94.5g</td></tr><tr><td>Chives, raw</td><td>0.0g</td></tr>
+    </table>
+
+    <h2>Nutrition Profile</h2>
+    <table>
+        <tr>
+            <th>Nutrient</th>
+            <th>Amount</th>
+            <th>% of Meal Target</th>
+            <th>% of Daily RDI</th>
+            <th>Status</th>
+        </tr>
+        <tr><td>Calcium (Ca) (mg)</td><td>385.8mg</td><td>38.6%</td><td>38.6%</td><td class='low'>LOW</td></tr><tr><td>Chloride (Cl) (mg)</td><td>701.8mg</td><td>30.5%</td><td>30.5%</td><td class='low'>LOW</td></tr><tr><td>Chromium (Cr) (ug)</td><td>32.4μg</td><td>92.5%</td><td>92.5%</td><td class='ok'>OK</td></tr><tr><td>Copper (Cu) (mg)</td><td>0.5mg</td><td>52.1%</td><td>52.1%</td><td class='low'>LOW</td></tr><tr><td>Total dietary fibre (g)</td><td>47.6g</td><td>125.3%</td><td>125.3%</td><td class='ok'>OK</td></tr><tr><td>Total folates (ug)</td><td>661.9μg</td><td>165.5%</td><td>165.5%</td><td class='high'>HIGH</td></tr><tr><td>Iodine (I) (ug)</td><td>25.5μg</td><td>17.0%</td><td>17.0%</td><td class='low'>LOW</td></tr><tr><td>Iron (Fe) (mg)</td><td>16.0mg</td><td>200.5%</td><td>200.5%</td><td class='high'>HIGH</td></tr><tr><td>Magnesium (Mg) (mg)</td><td>331.6mg</td><td>78.9%</td><td>78.9%</td><td class='low'>LOW</td></tr><tr><td>Manganese (Mn) (mg)</td><td>1.6mg</td><td>68.6%</td><td>68.6%</td><td class='low'>LOW</td></tr><tr><td>Molybdenum (Mo) (ug)</td><td>21.2μg</td><td>47.1%</td><td>47.1%</td><td class='low'>LOW</td></tr><tr><td>Phosphorus (P) (mg)</td><td>938.7mg</td><td>134.1%</td><td>134.1%</td><td class='ok'>OK</td></tr><tr><td>Potassium (K) (mg)</td><td>3790.7mg</td><td>111.5%</td><td>111.5%</td><td class='ok'>OK</td></tr><tr><td>Protein (g)</td><td>49.7g</td><td>88.8%</td><td>88.8%</td><td class='ok'>OK</td></tr><tr><td>Selenium (Se) (ug)</td><td>29.3μg</td><td>53.3%</td><td>53.3%</td><td class='low'>LOW</td></tr><tr><td>Sodium (Na) (mg)</td><td>1395.3mg</td><td>93.0%</td><td>93.0%</td><td class='ok'>OK</td></tr><tr><td>Vitamin A retinol equivalents (ug)</td><td>935.9μg</td><td>104.0%</td><td>104.0%</td><td class='ok'>OK</td></tr><tr><td>Thiamin (B1) (mg)</td><td>0.7mg</td><td>60.3%</td><td>60.3%</td><td class='low'>LOW</td></tr><tr><td>Cobalamin (B12) (ug)</td><td>0.3μg</td><td>14.0%</td><td>14.0%</td><td class='low'>LOW</td></tr><tr><td>Riboflavin (B2) (mg)</td><td>0.6mg</td><td>44.3%</td><td>44.3%</td><td class='low'>LOW</td></tr><tr><td>Niacin (B3) (mg)</td><td>6.1mg</td><td>37.9%</td><td>37.9%</td><td class='low'>LOW</td></tr><tr><td>Pantothenic acid (B5) (mg)</td><td>0.0mg</td><td>0.0%</td><td>0.0%</td><td class='low'>LOW</td></tr><tr><td>Pyridoxine (B6) (mg)</td><td>1.3mg</td><td>77.4%</td><td>77.4%</td><td class='low'>LOW</td></tr><tr><td>Biotin (B7) (ug)</td><td>0.0μg</td><td>0.0%</td><td>0.0%</td><td class='low'>LOW</td></tr><tr><td>Vitamin C (mg)</td><td>166.9mg</td><td>185.5%</td><td>185.5%</td><td class='high'>HIGH</td></tr><tr><td>Vitamin D3 equivalents (ug)</td><td>1.9μg</td><td>12.8%</td><td>12.8%</td><td class='low'>LOW</td></tr><tr><td>Vitamin E (mg)</td><td>5.6mg</td><td>37.6%</td><td>37.6%</td><td class='low'>LOW</td></tr><tr><td>Zinc (Zn) (mg)</td><td>7.4mg</td><td>67.0%</td><td>67.0%</td><td class='low'>LOW</td></tr><tr><td>Total saturated fatty acids, equated (g)</td><td>37.0g</td><td>168.4%</td><td>168.4%</td><td class='high'>HIGH</td></tr><tr><td>Cholesterol (mg)</td><td>245.0mg</td><td>81.7%</td><td>81.7%</td><td class='ok'>OK</td></tr><tr><td>Total long chain omega 3 fatty acids, equated (mg)</td><td>41.8mg</td><td>2.6%</td><td>2.6%</td><td class='low'>LOW</td></tr>
+    </table>
+
+    <h2>Summary</h2>
+    <div class="summary">
+        <p>Nutrients at good levels: 8 of 31</p>
+        <p>Nutrients below target: 19 of 31</p>
+        <p>Nutrients above target: 4 of 31</p>
+    </div>
+</body>
+</html>
