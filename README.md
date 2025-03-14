@@ -1,9 +1,10 @@
 # Genetic Algorithm Optimised Nutrition Recipes
 
-Generated on: 2025-03-14 18:28:06
+Generated on: 2025-03-14 19:36:10
 
 | Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
 |-------|------|-------|-------|----------------------|------------|----------|----------|
+| 477 | vegan | 6.28 | 15 | 19/11/1 | 288 | 1393.6 | [meal_477_20250314_190656.json](recipes/html/meal_477_20250314_190656.html) |
 | 465 | vegan | 7.88 | 13 | 16/12/3 | 266 | 1024.9 | [meal_465_20250314_150850.json](recipes/html/meal_465_20250314_150850.html) |
 | 459 | vegan | 8.58 | 12 | 9/18/4 | 234 | 1703.2 | [meal_459_20250314_131702.json](recipes/html/meal_459_20250314_131702.html) |
 | 468 | vegan | 8.63 | 17 | 15/14/2 | 31 | 461.4 | [meal_468_20250314_161039.json](recipes/html/meal_468_20250314_161039.html) |
@@ -34,7 +35,9 @@ Generated on: 2025-03-14 18:28:06
 | 460 | wfpb | 15.64 | 5 | 9/19/3 | 142 | 1902.8 | [meal_460_20250314_131702.json](recipes/html/meal_460_20250314_131702.html) |
 | 471 | vegan | 15.97 | 5 | 5/21/5 | 296 | 748.6 | [meal_471_20250314_170733.json](recipes/html/meal_471_20250314_170733.html) |
 | 454 | wfpb | 16.11 | 12 | 8/18/5 | 260 | 1844.7 | [meal_454_20250314_110745.json](recipes/html/meal_454_20250314_110745.html) |
+| 476 | all | 16.72 | 5 | 9/19/3 | 163 | 228.1 | [meal_476_20250314_190656.json](recipes/html/meal_476_20250314_190656.html) |
 | 457 | wfpb | 16.86 | 9 | 9/18/4 | 140 | 1078.7 | [meal_457_20250314_121550.json](recipes/html/meal_457_20250314_121550.html) |
+| 478 | wfpb | 18.52 | 7 | 8/19/4 | 189 | 1753.4 | [meal_478_20250314_190656.json](recipes/html/meal_478_20250314_190656.html) |
 | 475 | wfpb | 19.30 | 10 | 7/22/2 | 35 | 969.8 | [meal_475_20250314_181156.json](recipes/html/meal_475_20250314_181156.html) |
 | 451 | wfpb | 20.61 | 9 | 5/24/2 | 65 | 969.9 | [meal_451_20250314_100933.json](recipes/html/meal_451_20250314_100933.html) |
 | 469 | wfpb | 20.68 | 7 | 8/21/2 | 298 | 1058.2 | [meal_469_20250314_161039.json](recipes/html/meal_469_20250314_161039.html) |
