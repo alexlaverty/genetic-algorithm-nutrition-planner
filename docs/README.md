@@ -10,4 +10,4 @@ GitHub Pro: 6 hours per job
 GitHub Team: 6 hours per job
 GitHub Enterprise Cloud: 6 hours per job
 
-git checkout HEAD -- README.md optimization_history.csv
+git checkout HEAD -- README.md optimization_history.csv recipes/html/index.html
