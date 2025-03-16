@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meal 600 - Nutrition Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1, h2 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
+        th { background-color: #f5f5f5; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .low { color: #dc3545; }
+        .ok { color: #28a745; }
+        .high { color: #ffc107; }
+        .summary { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+        .score { font-size: 1.2em; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Meal 600 Nutrition Report</h1>
+
+    <div class="summary">
+        <p><span class="score">Optimization Score: 9.51</span></p>
+        <p>Diet Type: vegan</p>
+        <p>Execution Time: 1156.4 seconds</p>
+        <p>Generations: 289</p>
+        <p>Foods Used: 12</p>
+    </div>
+
+    <h2>Food Quantities</h2>
+    <table>
+        <tr><th>Food</th><th>Amount</th></tr>
+        <tr><td>Plum, dark, canned in syrup, drained</td><td>473.7g</td></tr><tr><td>Cauliflower, fresh, boiled, drained</td><td>451.8g</td></tr><tr><td>Mandarin, canned in syrup</td><td>247.6g</td></tr><tr><td>Bread, banana</td><td>218.9g</td></tr><tr><td>Confectionery, peanut, chocolate-coated</td><td>98.5g</td></tr><tr><td>Blue grenadier, flesh, baked, no added fat</td><td>87.1g</td></tr><tr><td>Pastry, filo, commercial, raw</td><td>80.4g</td></tr><tr><td>Meat alternative, legume and/or vegetable base, as purchased</td><td>74.7g</td></tr><tr><td>Raspberry, canned in syrup, syrup only</td><td>0.0g</td></tr><tr><td>Pasta, white wheat flour & spinach, boiled from dry, no added salt</td><td>0.0g</td></tr><tr><td>Strawberry, canned in syrup, drained</td><td>0.0g</td></tr><tr><td>Spelt, uncooked</td><td>0.0g</td></tr>
+    </table>
+
+    <h2>Nutrition Profile</h2>
+    <table>
+        <tr>
+            <th>Nutrient</th>
+            <th>Amount</th>
+            <th>% of Meal Target</th>
+            <th>% of Daily RDI</th>
+            <th>Status</th>
+        </tr>
+        <tr><td>Calcium (Ca) (mg)</td><td>446.5mg</td><td>44.6%</td><td>44.6%</td><td class='low'>LOW</td></tr><tr><td>Chloride (Cl) (mg)</td><td>1080.9mg</td><td>47.0%</td><td>47.0%</td><td class='low'>LOW</td></tr><tr><td>Chromium (Cr) (ug)</td><td>0.0μg</td><td>0.0%</td><td>0.0%</td><td class='low'>LOW</td></tr><tr><td>Copper (Cu) (mg)</td><td>1.1mg</td><td>127.5%</td><td>127.5%</td><td class='ok'>OK</td></tr><tr><td>Total dietary fibre (g)</td><td>30.0g</td><td>79.0%</td><td>79.0%</td><td class='low'>LOW</td></tr><tr><td>Total folates (ug)</td><td>295.6μg</td><td>73.9%</td><td>73.9%</td><td class='low'>LOW</td></tr><tr><td>Iodine (I) (ug)</td><td>47.6μg</td><td>31.7%</td><td>31.7%</td><td class='low'>LOW</td></tr><tr><td>Iron (Fe) (mg)</td><td>11.0mg</td><td>136.9%</td><td>136.9%</td><td class='ok'>OK</td></tr><tr><td>Magnesium (Mg) (mg)</td><td>331.3mg</td><td>78.9%</td><td>78.9%</td><td class='low'>LOW</td></tr><tr><td>Manganese (Mn) (mg)</td><td>3.1mg</td><td>135.2%</td><td>135.2%</td><td class='ok'>OK</td></tr><tr><td>Molybdenum (Mo) (ug)</td><td>52.9μg</td><td>117.5%</td><td>117.5%</td><td class='ok'>OK</td></tr><tr><td>Phosphorus (P) (mg)</td><td>1233.3mg</td><td>176.2%</td><td>176.2%</td><td class='high'>HIGH</td></tr><tr><td>Potassium (K) (mg)</td><td>3130.7mg</td><td>92.1%</td><td>92.1%</td><td class='ok'>OK</td></tr><tr><td>Protein (g)</td><td>70.9g</td><td>126.7%</td><td>126.7%</td><td class='ok'>OK</td></tr><tr><td>Selenium (Se) (ug)</td><td>86.6μg</td><td>157.4%</td><td>157.4%</td><td class='high'>HIGH</td></tr><tr><td>Sodium (Na) (mg)</td><td>1956.5mg</td><td>130.4%</td><td>130.4%</td><td class='ok'>OK</td></tr><tr><td>Vitamin A retinol equivalents (ug)</td><td>352.7μg</td><td>39.2%</td><td>39.2%</td><td class='low'>LOW</td></tr><tr><td>Thiamin (B1) (mg)</td><td>0.7mg</td><td>60.0%</td><td>60.0%</td><td class='low'>LOW</td></tr><tr><td>Cobalamin (B12) (ug)</td><td>1.3μg</td><td>55.0%</td><td>55.0%</td><td class='low'>LOW</td></tr><tr><td>Riboflavin (B2) (mg)</td><td>0.5mg</td><td>41.8%</td><td>41.8%</td><td class='low'>LOW</td></tr><tr><td>Niacin (B3) (mg)</td><td>14.1mg</td><td>88.1%</td><td>88.1%</td><td class='ok'>OK</td></tr><tr><td>Pantothenic acid (B5) (mg)</td><td>4.4mg</td><td>88.0%</td><td>88.0%</td><td class='ok'>OK</td></tr><tr><td>Pyridoxine (B6) (mg)</td><td>1.3mg</td><td>77.1%</td><td>77.1%</td><td class='low'>LOW</td></tr><tr><td>Biotin (B7) (ug)</td><td>48.0μg</td><td>160.1%</td><td>160.1%</td><td class='high'>HIGH</td></tr><tr><td>Vitamin C (mg)</td><td>120.5mg</td><td>133.9%</td><td>133.9%</td><td class='ok'>OK</td></tr><tr><td>Vitamin D3 equivalents (ug)</td><td>1.9μg</td><td>12.8%</td><td>12.8%</td><td class='low'>LOW</td></tr><tr><td>Vitamin E (mg)</td><td>16.5mg</td><td>109.9%</td><td>109.9%</td><td class='ok'>OK</td></tr><tr><td>Zinc (Zn) (mg)</td><td>6.1mg</td><td>55.6%</td><td>55.6%</td><td class='low'>LOW</td></tr><tr><td>Total saturated fatty acids, equated (g)</td><td>20.7g</td><td>94.1%</td><td>94.1%</td><td class='ok'>OK</td></tr><tr><td>Cholesterol (mg)</td><td>155.0mg</td><td>51.7%</td><td>51.7%</td><td class='low'>LOW</td></tr><tr><td>Total long chain omega 3 fatty acids, equated (mg)</td><td>311.1mg</td><td>19.4%</td><td>19.4%</td><td class='low'>LOW</td></tr>
+    </table>
+
+    <h2>Summary</h2>
+    <div class="summary">
+        <p>Nutrients at good levels: 12 of 31</p>
+        <p>Nutrients below target: 16 of 31</p>
+        <p>Nutrients above target: 3 of 31</p>
+    </div>
+</body>
+</html>
