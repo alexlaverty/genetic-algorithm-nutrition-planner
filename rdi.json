@@ -1,4 +1,8 @@
 {
+    "Energy with dietary fibre, equated (kJ)": {"rdi": 10878, "ul": 13389},
+    "Protein (g)": {"rdi": 91, "ul": 182},
+    "Fat, total (g)": {"rdi": 87, "ul": 110},
+    "Available carbohydrate, without sugar alcohols (g)": {"rdi": 325, "ul": 406},
     "Calcium (Ca) (mg)": {"rdi": 1000, "ul": 2500},
     "Chloride (Cl) (mg)": {"rdi": 2300},
     "Chromium (Cr) (ug)": {"rdi": 35},
@@ -12,7 +16,6 @@
     "Molybdenum (Mo) (ug)": {"rdi": 45, "ul": 2000},
     "Phosphorus (P) (mg)": {"rdi": 700, "ul": 4000},
     "Potassium (K) (mg)": {"rdi": 3400},
-    "Protein (g)": {"rdi": 56},
     "Selenium (Se) (ug)": {"rdi": 55, "ul": 400},
     "Sodium (Na) (mg)": {"rdi": 1500, "ul": 2300},
     "Vitamin A retinol equivalents (ug)": {"rdi": 900, "ul": 3000},

@@ -211,6 +211,27 @@ def _is_nutrition_sufficient(current, targets, threshold=0.90):
 def _calculate_nutrition_score(current, targets):
     """Calculate how far current nutrients are from targets."""
     score = 0
+
+    # Special handling for energy/calories
+    energy_key = "Energy with dietary fibre, equated (kJ)"
+    if energy_key in current and energy_key in targets:
+        energy = current[energy_key]
+        energy_target = targets[energy_key]
+
+        # Get RDI and UL from original nutrient_mapping if needed
+        with open('rdi.json', 'r') as f:
+            nutrient_data = json.load(f)
+            rdi = nutrient_data[energy_key]['rdi']
+            ul = nutrient_data[energy_key]['ul']
+
+        # Stricter penalties for being outside the energy range
+        if energy < rdi:
+            # Penalty for being under RDI
+            score += ((rdi - energy) / rdi) ** 2 * 2.0
+        # elif energy > ul:
+        #     # Severe penalty for being over UL
+        #     score += ((energy - ul) / ul) ** 2 * 3.0
+
     for nutrient, target in targets.items():
         # Penalize both under and over consumption, but under more heavily
         if current.get(nutrient, 0) < target:
@@ -591,25 +612,49 @@ if __name__ == "__main__":
     rdi_values = {nutrient: details['rdi'] for nutrient, details in nutrient_mapping.items()}
 
     # Run for each diet type
-    for run_type in ['all', 'vegan', 'wfpb']:
+    #for run_type in ['all', 'vegan', 'wfpb']:
+    for run_type in ['nutrient_dense']:
         print(f"\n=== Starting {run_type.upper()} foods optimization ===")
 
         # Filter foods based on diet type
         working_df = df.copy()
         if run_type != 'all':
             try:
-                # Load diet-specific exclusion rules
+                # Load diet-specific rules
                 config_file = f'{run_type}.json'
                 with open(config_file, 'r') as f:
-                    exclusion_config = json.load(f)
-                    excluded_terms = exclusion_config['excluded_terms']
+                    diet_config = json.load(f)
 
-                # Create a filter mask for non-excluded foods
-                mask = ~working_df['Food Name'].str.lower().apply(
-                    lambda x: any(term.lower() in x for term in excluded_terms)
-                )
-                working_df = working_df[mask]
-                print(f"Excluded {len(df) - len(working_df)} non-{run_type} foods")
+                initial_food_count = len(working_df)
+
+                # First apply inclusion filter if specified
+                if 'included_terms' in diet_config:
+                    # Convert all included terms to lowercase once
+                    included_terms = [term.lower() for term in diet_config['included_terms']]
+
+                    # Create inclusion mask using lowercase comparison
+                    inclusion_mask = working_df['Food Name'].str.lower().apply(
+                        lambda x: any(term in x for term in included_terms)
+                    )
+                    working_df = working_df[inclusion_mask]
+                    print(f"Included {len(working_df)} {run_type} foods based on inclusion criteria")
+
+                # Then apply exclusion filter
+                excluded_terms = diet_config.get('excluded_terms', [])
+                if excluded_terms:
+                    # Create exclusion mask - remove foods that match any excluded term
+                    exclusion_mask = ~working_df['Food Name'].str.lower().apply(
+                        lambda x: any(term.lower() in x for term in excluded_terms)
+                    )
+                    working_df = working_df[exclusion_mask]
+                    print(f"Removed {initial_food_count - len(working_df)} foods based on exclusion criteria")
+
+                print(f"Final food count: {len(working_df)} foods")
+
+                if len(working_df) == 0:
+                    print(f"Warning: No foods remain after filtering for {run_type} diet")
+                    continue
+
             except FileNotFoundError:
                 print(f"Warning: {config_file} not found, skipping {run_type} optimization")
                 continue
