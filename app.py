@@ -113,6 +113,18 @@ def optimize_nutrition(food_df,
         """Create a random solution."""
         return {food: random.uniform(25, 100) for food in available_foods}
 
+    # Generate random penalties for this optimization run
+    penalties = {
+        "under_rdi": random.uniform(1.3, 2.0),      # Penalty for being under RDI
+        "over_rdi": random.uniform(0.3, 1.0),       # Base penalty for being over RDI
+        "over_ul": random.uniform(2.0, 3.0),        # Severe penalty for exceeding UL
+        "water_soluble": random.uniform(0.3, 0.7),  # More lenient for water-soluble vitamins
+        "fat_soluble": random.uniform(0.6, 0.9)     # Less lenient for fat-soluble vitamins
+    }
+
+    print(f"Penalties:")
+    print(penalties)
+
     def evaluate_solution(solution):
         """Evaluate how close the solution is to the RDI targets."""
         current_nutrients = {nutrient: 0 for nutrient in meal_rdi_targets}
@@ -121,7 +133,8 @@ def optimize_nutrition(food_df,
                 if nutrient in foods_df.loc[food]:
                     nutrient_per_gram = foods_df.loc[food][nutrient] / foods_df.loc[food]['density']
                     current_nutrients[nutrient] += nutrient_per_gram * amount
-        return _calculate_nutrition_score(current_nutrients, meal_rdi_targets)
+        return _calculate_nutrition_score(current_nutrients, meal_rdi_targets, penalties)
+
 
     def mutate_solution(solution):
         """Mutate the solution by tweaking the food amounts."""
@@ -193,13 +206,17 @@ def optimize_nutrition(food_df,
                                         meal_number,
                                         generations=generations,
                                         execution_time=execution_time,
-                                        diet_type=diet_type)
+                                        diet_type=diet_type,
+                                        penalties=penalties)
 
     print(f"Generation {generation + 1}/{generations}, Best Score: {best_score}")
     print(f"Report saved to: {report_file}")
 
     # Round the amounts to make them more practical
-    return {food: round(amount) for food, amount in best_solution.items() if amount > 10}
+    return {
+        "solution": {food: round(amount) for food, amount in best_solution.items() if amount > 10},
+        "penalties": penalties
+    }
 
 def _is_nutrition_sufficient(current, targets, threshold=0.90):
     """Check if current nutrients are at least threshold percent of targets."""
@@ -208,8 +225,8 @@ def _is_nutrition_sufficient(current, targets, threshold=0.90):
             return False
     return True
 
-def _calculate_nutrition_score(current, targets):
-    """Calculate how far current nutrients are from targets."""
+def _calculate_nutrition_score(current, targets, penalties):
+    """Calculate how far current nutrients are from targets with randomized penalties."""
     score = 0
 
     # Special handling for energy/calories
@@ -218,60 +235,56 @@ def _calculate_nutrition_score(current, targets):
         energy = current[energy_key]
         energy_target = targets[energy_key]
 
-        # Get RDI and UL from original nutrient_mapping if needed
         with open('rdi.json', 'r') as f:
             nutrient_data = json.load(f)
             rdi = nutrient_data[energy_key]['rdi']
             ul = nutrient_data[energy_key]['ul']
 
-        # Stricter penalties for being outside the energy range
         if energy < rdi:
-            # Penalty for being under RDI
-            score += ((rdi - energy) / rdi) ** 2 * 2.0
-        # elif energy > ul:
-        #     # Severe penalty for being over UL
-        #     score += ((energy - ul) / ul) ** 2 * 3.0
+            score += ((rdi - energy) / rdi) ** 2 * penalties["under_rdi"]
+        elif energy > ul:
+            score += ((energy - ul) / ul) ** 2 * penalties["over_ul"]
+
+    # Handle other nutrients
+    water_soluble_vitamins = [
+        'Vitamin C (mg)',
+        'Thiamin (B1) (mg)',
+        'Riboflavin (B2) (mg)',
+        'Niacin (B3) (mg)',
+        'Pantothenic acid (B5) (mg)',
+        'Pyridoxine (B6) (mg)',
+        'Biotin (B7) (ug)',
+        'Cobalamin (B12) (ug)',
+        'Total folates (ug)'
+    ]
+
+    fat_soluble_vitamins = [
+        'Vitamin A retinol equivalents (ug)',
+        'Vitamin D3 equivalents (ug)',
+        'Vitamin E (mg)'
+    ]
 
     for nutrient, target in targets.items():
-        # Penalize both under and over consumption, but under more heavily
-        if current.get(nutrient, 0) < target:
-            score += ((target - current.get(nutrient, 0)) / target) ** 2 * 1.5
+        if nutrient == energy_key:
+            continue
+
+        current_value = current.get(nutrient, 0)
+        if current_value < target:
+            score += ((target - current_value) / target) ** 2 * penalties["under_rdi"]
         else:
-            # For vitamins and minerals, we're usually more tolerant of excess
-            if nutrient in [
-                'Vitamin A retinol equivalents (ug)',
-                'Vitamin C (mg)',
-                'Vitamin E (mg)',
-                'Vitamin D3 equivalents (ug)',
-                'Thiamin (B1) (mg)',
-                'Riboflavin (B2) (mg)',
-                'Niacin (B3) (mg)',
-                'Pantothenic acid (B5) (mg)',
-                'Pyridoxine (B6) (mg)',
-                'Biotin (B7) (ug)',
-                'Cobalamin (B12) (ug)',
-                'Total folates (ug)'
-            ]:
-                # Be more lenient for water-soluble vitamins (less penalty for excess)
-                excess_factor = 0.5 if nutrient in [
-                    'Vitamin C (mg)',
-                    'Thiamin (B1) (mg)',
-                    'Riboflavin (B2) (mg)',
-                    'Niacin (B3) (mg)',
-                    'Pantothenic acid (B5) (mg)',
-                    'Pyridoxine (B6) (mg)',
-                    'Biotin (B7) (ug)',
-                    'Cobalamin (B12) (ug)',
-                    'Total folates (ug)'
-                ] else 0.8
-                score += ((current.get(nutrient, 0) - target) / target) ** 2 * excess_factor
+            if nutrient in water_soluble_vitamins:
+                penalty = penalties["water_soluble"]
+            elif nutrient in fat_soluble_vitamins:
+                penalty = penalties["fat_soluble"]
             else:
-                score += ((current.get(nutrient, 0) - target) / target) ** 2
+                penalty = penalties["over_rdi"]
+            score += ((current_value - target) / target) ** 2 * penalty
+
     return score
 
 def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
-                          number_of_meals=3, meal_number=1, generations=100,
-                          execution_time=0, diet_type='all'):
+                         number_of_meals=3, meal_number=1, generations=100,
+                         execution_time=0, diet_type='all', penalties=None):
     """Save a detailed nutrition report as JSON and HTML."""
 
     # Scale RDI for a single meal
@@ -295,7 +308,14 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
             "optimization_score": float(score),
             "generations": int(generations),
             "number_of_foods": len(foods_consumed),
-            "execution_time_seconds": float(execution_time)
+            "execution_time_seconds": float(execution_time),
+            "penalties": {
+                "under_rdi": penalties["under_rdi"],
+                "over_rdi": penalties["over_rdi"],
+                "over_ul": penalties["over_ul"],
+                "water_soluble": penalties["water_soluble"],
+                "fat_soluble": penalties["fat_soluble"]
+            }
         },
         "food_quantities": {
             str(food): f"{float(amount):.1f}g"
@@ -391,6 +411,16 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
         <p>Nutrients below target: {report['summary']['nutrients_below_target']} of {report['summary']['total_nutrients']}</p>
         <p>Nutrients above target: {report['summary']['nutrients_above_target']} of {report['summary']['total_nutrients']}</p>
     </div>
+    <div class="penalties">
+        <h2>Optimization Penalties</h2>
+        <ul>
+            <li>Under RDI: {penalties["under_rdi"]:.2f}x</li>
+            <li>Over RDI: {penalties["over_rdi"]:.2f}x</li>
+            <li>Over UL: {penalties["over_ul"]:.2f}x</li>
+            <li>Water-soluble vitamins: {penalties["water_soluble"]:.2f}x</li>
+            <li>Fat-soluble vitamins: {penalties["fat_soluble"]:.2f}x</li>
+        </ul>
+    </div>
 </body>
 </html>"""
 
@@ -483,6 +513,15 @@ def generate_index():
                 timestamp = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
                 diet_type = meal_info.get("diet_type", "all")
 
+                # Handle missing penalties field with default values
+                default_penalties = {
+                    "under_rdi": 1.5,
+                    "over_rdi": 0.5,
+                    "over_ul": 2.5,
+                    "water_soluble": 0.5,
+                    "fat_soluble": 0.8
+                }
+
                 meals.append({
                     "filename": filename,
                     "run_number": meal_info["run_number"],
@@ -494,7 +533,8 @@ def generate_index():
                     "food_items": food_items,
                     "timestamp": timestamp,
                     "generations": meal_info["generations"],
-                    "execution_time": meal_info["execution_time_seconds"]
+                    "execution_time": meal_info["execution_time_seconds"],
+                    'penalties': meal_info.get('penalties', default_penalties)
                 })
 
     # Sort meals by optimization score (ascending - better scores first)
@@ -537,7 +577,7 @@ def generate_index():
     <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
     <table>
         <tr>
-            <th>Run #</th>
+            <th>#</th>
             <th>Diet</th>
             <th>Score</th>
             <th>Foods</th>
@@ -548,7 +588,7 @@ def generate_index():
         </tr>
 """
 
-    for meal in meals:
+    for idx, meal in enumerate(meals, start=1):
         # Add markdown row
         markdown += f"| {meal['run_number']} | {meal['diet_type']} | {meal['optimization_score']:.2f} | "
         markdown += f"{meal['food_items']} | {meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']} | "
@@ -558,7 +598,7 @@ def generate_index():
         # Add HTML row
         score_class = 'good' if meal['optimization_score'] < 5 else 'warning' if meal['optimization_score'] < 10 else 'error'
         html += f"""        <tr>
-            <td>{meal['run_number']}</td>
+            <td>{idx}</td>
             <td>{meal['diet_type']}</td>
             <td class="{score_class}">{meal['optimization_score']:.2f}</td>
             <td>{meal['food_items']}</td>
@@ -732,7 +772,7 @@ if __name__ == "__main__":
 
         # Generate random number of generations
         generations = random.randint(10, 300)
-        # generations = 3
+        generations = 3
         print(f"Selected {generations} for number of generations")
 
         # Clean column names
