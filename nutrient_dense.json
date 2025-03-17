@@ -38,7 +38,8 @@
         "Oyster",
         "Chicken",
         "Cabbage",
-        "Onion"
+        "Onion",
+        "Garlic"
     ],
     "excluded_terms": [
         "abalone",

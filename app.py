@@ -595,6 +595,72 @@ def init_directories():
             os.makedirs(dir_path)
             print(f"Created directory: {dir_path}")
 
+def cleanup_high_score_recipes(max_score=20, max_files=250):
+    """
+    Remove recipe files based on score threshold and total file count limit.
+
+    Args:
+        max_score (float): Maximum allowed optimization score (default: 20)
+        max_files (int): Maximum number of recipe files to keep (default: 250)
+    """
+    print(f"\nCleaning up recipes (max score: {max_score}, max files: {max_files})...")
+    recipes = []
+    removed_count = 0
+
+    # Collect all recipe data
+    recipes_dir = "recipes/json"
+    for filename in os.listdir(recipes_dir):
+        if filename.endswith(".json"):
+            filepath = os.path.join(recipes_dir, filename)
+            try:
+                with open(filepath, 'r') as f:
+                    data = json.load(f)
+                    score = data["meal_info"]["optimization_score"]
+                    recipes.append({
+                        "filename": filename,
+                        "score": score,
+                        "filepath": filepath
+                    })
+            except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
+                print(f"Error processing {filename}: {str(e)}")
+                continue
+
+    # Sort recipes by score (best scores first)
+    recipes.sort(key=lambda x: x["score"])
+
+    # Process recipes
+    for idx, recipe in enumerate(recipes):
+        should_remove = False
+        reason = ""
+
+        if recipe["score"] > max_score:
+            should_remove = True
+            reason = f"score too high ({recipe['score']:.2f} > {max_score})"
+        elif idx >= max_files:
+            should_remove = True
+            reason = f"exceeds file limit ({idx + 1} > {max_files})"
+
+        if should_remove:
+            # Remove JSON file
+            os.remove(recipe["filepath"])
+
+            # Remove corresponding HTML file
+            html_file = os.path.join("recipes/html",
+                                   os.path.splitext(recipe["filename"])[0] + ".html")
+            if os.path.exists(html_file):
+                os.remove(html_file)
+
+            removed_count += 1
+            print(f"Removed recipe {recipe['filename']} ({reason})")
+
+    remaining_count = len(recipes) - removed_count
+    print(f"\nCleanup complete:")
+    print(f"- Removed {removed_count} recipes")
+    print(f"- {remaining_count} recipes remaining")
+    print(f"- Best score: {recipes[0]['score']:.2f}")
+    print(f"- Worst remaining score: {recipes[min(remaining_count-1, len(recipes)-1)]['score']:.2f}")
+
+
 if __name__ == "__main__":
     start_time = time.time()
     init_directories()
@@ -612,8 +678,8 @@ if __name__ == "__main__":
     rdi_values = {nutrient: details['rdi'] for nutrient, details in nutrient_mapping.items()}
 
     # Run for each diet type
-    #for run_type in ['all', 'vegan', 'wfpb']:
-    for run_type in ['nutrient_dense']:
+    for run_type in ['all', 'vegan', 'wfpb', 'nutrient_dense']:
+    #for run_type in ['nutrient_dense']:
         print(f"\n=== Starting {run_type.upper()} foods optimization ===")
 
         # Filter foods based on diet type
@@ -687,5 +753,6 @@ if __name__ == "__main__":
 
         print(f"=== Completed {run_type.upper()} foods optimization ===\n")
 
+    cleanup_high_score_recipes(max_score=20, max_files=250)
     # Generate final index
     generate_index()
