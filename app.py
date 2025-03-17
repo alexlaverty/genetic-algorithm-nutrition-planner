@@ -660,7 +660,7 @@ if __name__ == "__main__":
                 continue
 
         # Randomly select between 5-20 foods
-        n_foods = random.randint(5, 20)
+        n_foods = random.randint(10, 30)
         random_foods = working_df.sample(n=n_foods)
         print(f"Selected {n_foods} random foods for optimization")
 
