@@ -607,7 +607,6 @@ def generate_index():
             <td>{meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']}</td>
             <td>{meal['generations']}</td>
             <td>{meal['execution_time']:.1f}</td>
-            <td></td>
             <td><a href="{os.path.splitext(meal['filename'])[0]}.html">{os.path.basename(meal['filename'])}</a></td>
         </tr>
 """
