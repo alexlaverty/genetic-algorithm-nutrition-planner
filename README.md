@@ -1,13 +1,15 @@
 # Genetic Algorithm Optimised Nutrition Recipes
 
-Generated on: 2025-03-18 12:44:00
+Generated on: 2025-03-18 14:19:59
 
 | Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
 |-------|------|-------|-------|----------------------|------------|----------|----------|
+| 742 | all | 2.36 | 20 | 23/3/8 | 98 | 613.4 | [meal_742_20250318_131927.json](recipes/html/meal_742_20250318_131927.html) |
 | 542 | all | 4.74 | 19 | 13/14/4 | 255 | 1324.8 | [meal_542_20250315_181047.json](recipes/html/meal_542_20250315_181047.html) |
 | 738 | all | 4.88 | 23 | 22/3/9 | 298 | 2054.6 | [meal_738_20250318_110751.json](recipes/html/meal_738_20250318_110751.html) |
 | 561 | vegan | 5.07 | 19 | 19/11/1 | 191 | 1583.8 | [meal_561_20250316_004624.json](recipes/html/meal_561_20250316_004624.html) |
 | 683 | all | 5.20 | 18 | 16/13/2 | 297 | 1466.9 | [meal_683_20250317_190721.json](recipes/html/meal_683_20250317_190721.html) |
+| 743 | vegan | 5.36 | 17 | 20/6/8 | 259 | 1980.5 | [meal_743_20250318_131927.json](recipes/html/meal_743_20250318_131927.html) |
 | 611 | all | 5.37 | 17 | 14/12/5 | 129 | 599.0 | [meal_611_20250316_181146.json](recipes/html/meal_611_20250316_181146.html) |
 | 524 | all | 5.53 | 19 | 16/12/3 | 82 | 430.4 | [meal_524_20250315_121426.json](recipes/html/meal_524_20250315_121426.html) |
 | 551 | all | 5.66 | 19 | 14/14/3 | 58 | 299.6 | [meal_551_20250315_210816.json](recipes/html/meal_551_20250315_210816.html) |
@@ -252,5 +254,3 @@ Generated on: 2025-03-18 12:44:00
 | 605 | all | 19.01 | 5 | 5/23/3 | 140 | 199.1 | [meal_605_20250316_160913.json](recipes/html/meal_605_20250316_160913.html) |
 | 709 | nutrient_dense | 19.03 | 24 | 7/19/8 | 3 | 83.1 | [meal_709_20250318_032259.json](recipes/html/meal_709_20250318_032259.html) |
 | 628 | wfpb | 19.05 | 10 | 7/21/3 | 180 | 1174.4 | [meal_628_20250316_230745.json](recipes/html/meal_628_20250316_230745.html) |
-| 558 | vegan | 19.21 | 5 | 4/24/3 | 194 | 766.1 | [meal_558_20250315_230748.json](recipes/html/meal_558_20250315_230748.html) |
-| 475 | wfpb | 19.30 | 10 | 7/22/2 | 35 | 969.8 | [meal_475_20250314_181156.json](recipes/html/meal_475_20250314_181156.html) |
