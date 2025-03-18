@@ -289,7 +289,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
 
     # Scale RDI for a single meal
     meal_rdi = {nutrient: float(target) / number_of_meals for nutrient, target in rdi.items()}
-
+    recipe_timestamp = datetime.now().strftime('%Y-%m-%d')
     # Calculate nutrient totals
     final_nutrients = {nutrient: 0 for nutrient in meal_rdi}
 
@@ -309,6 +309,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
             "generations": int(generations),
             "number_of_foods": len(foods_consumed),
             "execution_time_seconds": float(execution_time),
+            "date": str(recipe_timestamp),
             "penalties": {
                 "under_rdi": penalties["under_rdi"],
                 "over_rdi": penalties["over_rdi"],
@@ -379,6 +380,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
         <p>Execution Time: {execution_time:.1f} seconds</p>
         <p>Generations: {generations}</p>
         <p>Foods Used: {len(foods_consumed)}</p>
+        <p>Date: {recipe_timestamp}</p>
     </div>
 
     <h2>Food Quantities</h2>
@@ -509,8 +511,6 @@ def generate_index():
                 summary = data["summary"]
                 food_items = len(data["food_quantities"])
 
-                timestamp_str = '_'.join(filename.split('_')[2:]).split('.')[0]
-                timestamp = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
                 diet_type = meal_info.get("diet_type", "all")
 
                 # Handle missing penalties field with default values
@@ -525,13 +525,13 @@ def generate_index():
                 meals.append({
                     "filename": filename,
                     "run_number": meal_info["run_number"],
+                    'timestamp': meal_info.get('date', ""),
                     "diet_type": diet_type,
                     "optimization_score": meal_info["optimization_score"],
                     "nutrients_ok": summary["nutrients_at_good_levels"],
                     "nutrients_low": summary["nutrients_below_target"],
                     "nutrients_high": summary["nutrients_above_target"],
                     "food_items": food_items,
-                    "timestamp": timestamp,
                     "generations": meal_info["generations"],
                     "execution_time": meal_info["execution_time_seconds"],
                     'penalties': meal_info.get('penalties', default_penalties)
@@ -578,6 +578,7 @@ def generate_index():
     <table>
         <tr>
             <th>#</th>
+            <th>Timestamp</th>
             <th>Diet</th>
             <th>Score</th>
             <th>Foods</th>
@@ -599,12 +600,14 @@ def generate_index():
         score_class = 'good' if meal['optimization_score'] < 5 else 'warning' if meal['optimization_score'] < 10 else 'error'
         html += f"""        <tr>
             <td>{idx}</td>
+            <td>{meal['timestamp']}</td>
             <td>{meal['diet_type']}</td>
             <td class="{score_class}">{meal['optimization_score']:.2f}</td>
             <td>{meal['food_items']}</td>
             <td>{meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']}</td>
             <td>{meal['generations']}</td>
             <td>{meal['execution_time']:.1f}</td>
+            <td></td>
             <td><a href="{os.path.splitext(meal['filename'])[0]}.html">{os.path.basename(meal['filename'])}</a></td>
         </tr>
 """
@@ -772,7 +775,7 @@ if __name__ == "__main__":
 
         # Generate random number of generations
         generations = random.randint(10, 300)
-        generations = 3
+        #generations = 3
         print(f"Selected {generations} for number of generations")
 
         # Clean column names
