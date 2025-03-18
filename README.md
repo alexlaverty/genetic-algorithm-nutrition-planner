@@ -1,6 +1,6 @@
 # Genetic Algorithm Optimised Nutrition Recipes
 
-Generated on: 2025-03-17 23:10:03
+Generated on: 2025-03-18 00:44:07
 
 | Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
 |-------|------|-------|-------|----------------------|------------|----------|----------|
@@ -137,6 +137,7 @@ Generated on: 2025-03-17 23:10:03
 | 603 | vegan | 12.31 | 14 | 11/16/4 | 232 | 1135.5 | [meal_603_20250316_150738.json](recipes/html/meal_603_20250316_150738.html) |
 | 486 | vegan | 12.43 | 13 | 13/15/3 | 19 | 285.6 | [meal_486_20250314_220806.json](recipes/html/meal_486_20250314_220806.html) |
 | 682 | wfpb | 12.48 | 19 | 10/17/4 | 204 | 2001.2 | [meal_682_20250317_181244.json](recipes/html/meal_682_20250317_181244.html) |
+| 698 | all | 12.51 | 21 | 20/10/4 | 3 | 22.1 | [meal_698_20250318_004233.json](recipes/html/meal_698_20250318_004233.html) |
 | 444 | vegan | 12.52 | 16 | 9/20/2 | 24 | 282.6 | [meal_444_20250314_081207.json](recipes/html/meal_444_20250314_081207.html) |
 | 569 | all | 12.52 | 11 | 7/20/4 | 128 | 385.0 | [meal_569_20250316_041018.json](recipes/html/meal_569_20250316_041018.html) |
 | 442 | wfpb | 12.53 | 19 | 13/17/1 | 281 | 3194.0 | [meal_442_20250314_070843.json](recipes/html/meal_442_20250314_070843.html) |
@@ -236,5 +237,6 @@ Generated on: 2025-03-17 23:10:03
 | 558 | vegan | 19.21 | 5 | 4/24/3 | 194 | 766.1 | [meal_558_20250315_230748.json](recipes/html/meal_558_20250315_230748.html) |
 | 475 | wfpb | 19.30 | 10 | 7/22/2 | 35 | 969.8 | [meal_475_20250314_181156.json](recipes/html/meal_475_20250314_181156.html) |
 | 695 | vegan | 19.75 | 13 | 7/19/8 | 3 | 35.7 | [meal_695_20250317_230847.json](recipes/html/meal_695_20250317_230847.html) |
+| 700 | wfpb | 19.81 | 19 | 9/19/6 | 3 | 67.4 | [meal_700_20250318_004233.json](recipes/html/meal_700_20250318_004233.html) |
 | 555 | vegan | 19.85 | 6 | 9/21/1 | 35 | 238.9 | [meal_555_20250315_220735.json](recipes/html/meal_555_20250315_220735.html) |
 | 582 | vegan | 19.86 | 5 | 6/22/3 | 273 | 721.2 | [meal_582_20250316_081048.json](recipes/html/meal_582_20250316_081048.html) |
