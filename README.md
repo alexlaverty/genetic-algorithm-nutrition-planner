@@ -1,6 +1,6 @@
 # Genetic Algorithm Optimised Nutrition Recipes
 
-Generated on: 2025-03-18 05:10:53
+Generated on: 2025-03-18 06:14:34
 
 | Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
 |-------|------|-------|-------|----------------------|------------|----------|----------|
@@ -168,6 +168,7 @@ Generated on: 2025-03-18 05:10:53
 | 515 | all | 13.62 | 7 | 10/17/4 | 71 | 140.8 | [meal_515_20250315_090817.json](recipes/html/meal_515_20250315_090817.html) |
 | 484 | wfpb | 13.65 | 15 | 11/18/2 | 99 | 1056.1 | [meal_484_20250314_210740.json](recipes/html/meal_484_20250314_210740.html) |
 | 636 | vegan | 13.67 | 10 | 9/19/3 | 98 | 593.1 | [meal_636_20250317_032341.json](recipes/html/meal_636_20250317_032341.html) |
+| 719 | vegan | 13.67 | 22 | 17/12/5 | 3 | 41.9 | [meal_719_20250318_061300.json](recipes/html/meal_719_20250318_061300.html) |
 | 624 | vegan | 13.75 | 10 | 10/18/3 | 17 | 694.7 | [meal_624_20250316_220732.json](recipes/html/meal_624_20250316_220732.html) |
 | 565 | wfpb | 13.84 | 13 | 14/16/1 | 165 | 2031.1 | [meal_565_20250316_022129.json](recipes/html/meal_565_20250316_022129.html) |
 | 707 | vegan | 13.98 | 17 | 15/13/6 | 3 | 45.5 | [meal_707_20250318_032259.json](recipes/html/meal_707_20250318_032259.html) |
