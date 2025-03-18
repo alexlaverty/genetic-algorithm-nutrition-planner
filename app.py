@@ -115,11 +115,11 @@ def optimize_nutrition(food_df,
 
     # Generate random penalties for this optimization run
     penalties = {
-        "under_rdi": random.uniform(1.3, 2.0),      # Penalty for being under RDI
-        "over_rdi": random.uniform(0.3, 1.0),       # Base penalty for being over RDI
-        "over_ul": random.uniform(2.0, 3.0),        # Severe penalty for exceeding UL
-        "water_soluble": random.uniform(0.3, 0.7),  # More lenient for water-soluble vitamins
-        "fat_soluble": random.uniform(0.6, 0.9)     # Less lenient for fat-soluble vitamins
+        "under_rdi": random.uniform(2.0, 3.0),      # Higher penalty for being under RDI
+        "over_rdi": random.uniform(0.2, 0.4),       # Lower penalty for being over RDI
+        "over_ul": random.uniform(1.8, 2.5),        # Still maintain UL safety
+        "water_soluble": random.uniform(0.1, 0.3),  # Very lenient for water-soluble
+        "fat_soluble": random.uniform(0.3, 0.5)     # More lenient for fat-soluble
     }
 
     print(f"Penalties:")
@@ -515,11 +515,11 @@ def generate_index():
 
                 # Handle missing penalties field with default values
                 default_penalties = {
-                    "under_rdi": 1.5,
-                    "over_rdi": 0.5,
-                    "over_ul": 2.5,
-                    "water_soluble": 0.5,
-                    "fat_soluble": 0.8
+                    "under_rdi": 2.5,
+                    "over_rdi": 0.3,
+                    "over_ul": 2,
+                    "water_soluble": 0.2,
+                    "fat_soluble": 0.4
                 }
 
                 meals.append({
