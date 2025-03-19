@@ -1,4 +1,5 @@
 from datetime import datetime
+import argparse
 import json
 import numpy as np
 import os
@@ -235,7 +236,8 @@ def _calculate_nutrition_score(current, targets, penalties):
         energy = current[energy_key]
         energy_target = targets[energy_key]
 
-        with open('rdi.json', 'r') as f:
+        rdi_path = os.path.join('rdi', 'rdi.json')
+        with open(rdi_path, 'r') as f:
             nutrient_data = json.load(f)
             rdi = nutrient_data[energy_key]['rdi']
             ul = nutrient_data[energy_key]['ul']
@@ -348,7 +350,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
     }
 
     # Save JSON
-    json_filename = f"recipes/json/meal_{run_number}_{timestamp}.json"
+    json_filename = os.path.join('recipes', 'json', f'meal_{run_number}_{timestamp}.json')
     with open(json_filename, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
 
@@ -427,7 +429,7 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
 </html>"""
 
     # Save HTML
-    html_filename = f"recipes/html/meal_{run_number}_{timestamp}.html"
+    html_filename = os.path.join('recipes', 'html', f'meal_{run_number}_{timestamp}.html')
     with open(html_filename, 'w', encoding='utf-8') as f:
         f.write(html)
 
@@ -637,6 +639,12 @@ def init_directories():
             os.makedirs(dir_path)
             print(f"Created directory: {dir_path}")
 
+    # Create RDI directory
+    rdi_dir = 'rdi'
+    if not os.path.exists(rdi_dir):
+        os.makedirs(rdi_dir)
+        print(f"Created directory: {rdi_dir}")
+
 def cleanup_high_score_recipes(max_score=20, max_files=250):
     """
     Remove recipe files based on score threshold and total file count limit.
@@ -704,6 +712,14 @@ def cleanup_high_score_recipes(max_score=20, max_files=250):
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Optimize nutrition using genetic algorithm')
+    parser.add_argument('--generations', type=int, default=None,
+                       help='Number of generations to run (default: random 50-400)')
+    parser.add_argument('--foods', type=int, default=None,
+                       help='Number of foods to select (default: random 10-30)')
+    args = parser.parse_args()
+
     start_time = time.time()
     init_directories()
     # Load the Excel file
@@ -711,7 +727,8 @@ if __name__ == "__main__":
     df = pd.read_excel(file_path, sheet_name="All solids & liquids per 100g")
 
     # Load the RDI data
-    with open('rdi.json', 'r') as f:
+    rdi_path = os.path.join('rdi', 'rdi.json')
+    with open(rdi_path, 'r') as f:
         nutrient_mapping = json.load(f)
 
     # Settings that will be the same for all runs
@@ -729,7 +746,7 @@ if __name__ == "__main__":
         if run_type != 'all':
             try:
                 # Load diet-specific rules
-                config_file = f'{run_type}.json'
+                config_file = os.path.join('diets', f'{run_type}.json')
                 with open(config_file, 'r') as f:
                     diet_config = json.load(f)
 
@@ -768,12 +785,12 @@ if __name__ == "__main__":
                 continue
 
         # Randomly select between 5-20 foods
-        n_foods = random.randint(10, 30)
+        n_foods = args.foods if args.foods is not None else random.randint(10, 30)
         random_foods = working_df.sample(n=n_foods)
         print(f"Selected {n_foods} random foods for optimization")
 
         # Generate random number of generations
-        generations = random.randint(10, 300)
+        generations = args.generations if args.generations is not None else random.randint(50, 400)
         #generations = 3
         print(f"Selected {generations} for number of generations")
 
