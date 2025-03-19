@@ -6,270 +6,463 @@ import os
 import pandas as pd
 import random
 import time
+from flask import Flask, render_template, request, jsonify
+from flask_socketio import SocketIO, emit
+import threading
+import logging
 
-# Save to JSON file with timestamp
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+socketio = SocketIO(app, logger=True, engineio_logger=True)
+
+# Global variables for optimization state
+optimization_running = False
+optimization_thread = None
+should_stop = False
+
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
+# Load food data globally
+logger.debug("Loading food data from Excel and RDI JSON")
+file_path = "Release 2 - Nutrient file.xlsx"
+try:
+    df = pd.read_excel(file_path, sheet_name="All solids & liquids per 100g")
+    logger.debug(f"Loaded {len(df)} foods from Excel file")
+except Exception as e:
+    logger.error(f"Failed to load Excel file: {e}")
+    raise
+
+rdi_path = os.path.join('rdi', 'rdi.json')
+try:
+    with open(rdi_path, 'r') as f:
+        nutrient_mapping = json.load(f)
+    rdi_values = {nutrient: details['rdi'] for nutrient, details in nutrient_mapping.items()}
+    logger.debug(f"Loaded {len(rdi_values)} nutrients from RDI JSON")
+except Exception as e:
+    logger.error(f"Failed to load RDI JSON: {e}")
+    raise
+
 def get_next_run_number():
-    """Get the next run number by checking existing CSV file"""
     if not os.path.exists('optimization_history.csv'):
+        logger.debug("No optimization history file found, starting with run number 1")
         return 1
     df = pd.read_csv('optimization_history.csv')
-    return df['run_number'].max() + 1 if not df.empty else 1
+    run_number = df['run_number'].max() + 1 if not df.empty else 1
+    logger.debug(f"Next run number: {run_number}")
+    return run_number
 
-def optimize_nutrition(food_df,
-                       nutrient_mapping,
-                       rdi_targets,
-                       number_of_meals=1,
-                       meal_number=1,
-                       randomness_factor=0.3,
-                       population_size=50,
-                       generations=100,
-                       diet_type='all'):
-    """
-    Optimize food selection to meet RDI targets while maintaining variety,
-    scaled for a specific meal in a multi-meal day.
+def optimize_nutrition_core(food_df, nutrient_mapping, rdi_targets, params):
+    global optimization_running, should_stop
 
-    Parameters:
-    -----------
-    food_df : pandas.DataFrame
-        DataFrame containing food nutrition data from the Excel spreadsheet
+    number_of_meals = params.get('number_of_meals', 1)
+    meal_number = params.get('meal_number', 1)
+    population_size = params.get('population_size', 50)
+    generations = params.get('generations', 100)
+    diet_type = params.get('diet_type', 'all')
+    randomness_factor = params.get('randomness_factor', 0.3)
 
-    nutrient_mapping : dict
-        Dictionary mapping from nutrient names to column names in the DataFrame
-        Example: {'protein': 'Protein (g)', 'vitamin_c': 'Vitamin C (mg)', ...}
+    logger.debug(f"Params: number_of_meals={number_of_meals}, meal_number={meal_number}, "
+                 f"population_size={population_size}, generations={generations}, diet_type={diet_type}, "
+                 f"randomness_factor={randomness_factor}")
 
-    rdi_targets : dict
-        Dictionary with nutrient names as keys and RDI values as values.
-        Example: {'protein': 50, 'vitamin_c': 90, ...}
-
-    number_of_meals : int
-        Number of meals per day to divide the RDI targets between
-
-    meal_number : int
-        Which meal of the day this is (1 to number_of_meals)
-
-    num_iterations : int
-        Number of optimization attempts to find the best solution
-
-    randomness_factor : float
-        Value between 0-1 determining how much randomness to include
-        Higher values = more variety but potentially less optimal solutions
-
-    population_size : int
-        Number of solutions in the population for the genetic algorithm
-
-    generations : int
-        Number of generations to run the genetic algorithm
-
-    Returns:
-    --------
-    dict
-        Dictionary with food names as keys and grams to consume as values
-    """
-    # Validate inputs
     if meal_number < 1 or meal_number > number_of_meals:
+        logger.error(f"Invalid meal number: {meal_number} not between 1 and {number_of_meals}")
         raise ValueError(f"Meal number must be between 1 and {number_of_meals}")
 
-    # Scale RDI targets for a single meal
     meal_rdi_targets = {nutrient: target / number_of_meals for nutrient, target in rdi_targets.items()}
-
-    # Convert Excel data to the format needed for optimization
     available_foods = {}
 
+    logger.debug(f"Processing {len(food_df)} foods into available_foods")
     for idx, row in food_df.iterrows():
         food_name = row['Food Name']
-        food_data = {'density': 100}  # Assuming 100g per serving
-
-        # Map each nutrient using the column names directly from nutrient_mapping
+        food_data = {'density': 100}
         for column_name in nutrient_mapping.keys():
             if column_name in food_df.columns:
-                # Handle missing values
-                if pd.notna(row[column_name]):
-                    food_data[column_name] = row[column_name]
-                else:
-                    food_data[column_name] = 0.0
+                food_data[column_name] = row[column_name] if pd.notna(row[column_name]) else 0.0
             else:
-                print(f"Warning: Column '{column_name}' not found")
                 food_data[column_name] = 0.0
-
         available_foods[food_name] = food_data
 
-    # Convert to DataFrame for easier manipulation
     foods_df = pd.DataFrame(available_foods).T
-
-    # Calculate nutrient density scores for each food
-    # Higher score = more nutrients per gram
     nutrient_cols = [col for col in foods_df.columns if col != 'density']
-
-    # Calculate weighted nutrient score based on RDI percentages
     foods_df['nutrient_score'] = 0
     for nutrient in nutrient_cols:
         if nutrient in meal_rdi_targets:
-            # Weight by importance (inverse of RDI - smaller RDIs are more important per unit)
             weight = 1 / meal_rdi_targets[nutrient] if meal_rdi_targets[nutrient] > 0 else 0
             foods_df['nutrient_score'] += foods_df[nutrient] * weight / foods_df['density']
 
     def create_solution():
-        """Create a random solution."""
         return {food: random.uniform(25, 100) for food in available_foods}
 
-    # Generate random penalties for this optimization run
     penalties = {
-        "under_rdi": random.uniform(2.0, 3.0),      # Higher penalty for being under RDI
-        "over_rdi": random.uniform(0.2, 0.4),       # Lower penalty for being over RDI
-        "over_ul": random.uniform(1.8, 2.5),        # Still maintain UL safety
-        "water_soluble": random.uniform(0.1, 0.3),  # Very lenient for water-soluble
-        "fat_soluble": random.uniform(0.3, 0.5)     # More lenient for fat-soluble
+        "under_rdi": random.uniform(2.0, 3.0),
+        "over_rdi": random.uniform(0.2, 0.4),
+        "over_ul": random.uniform(1.8, 2.5),
+        "water_soluble": random.uniform(0.1, 0.3),
+        "fat_soluble": random.uniform(0.3, 0.5)
     }
-
-    print(f"Penalties:")
-    print(penalties)
+    logger.debug(f"Penalties: {penalties}")
 
     def evaluate_solution(solution):
-        """Evaluate how close the solution is to the RDI targets."""
         current_nutrients = {nutrient: 0 for nutrient in meal_rdi_targets}
         for food, amount in solution.items():
             for nutrient in meal_rdi_targets:
                 if nutrient in foods_df.loc[food]:
                     nutrient_per_gram = foods_df.loc[food][nutrient] / foods_df.loc[food]['density']
                     current_nutrients[nutrient] += nutrient_per_gram * amount
-        return _calculate_nutrition_score(current_nutrients, meal_rdi_targets, penalties)
 
+        score = _calculate_nutrition_score(current_nutrients, meal_rdi_targets, penalties)
+
+        # Debug information for nutrition calculation
+        if logger.level <= logging.DEBUG:
+            # Log top 3 contributors to score
+            nutrition_penalties = []
+            for nutrient, amount in current_nutrients.items():
+                target = meal_rdi_targets.get(nutrient, 0)
+                if target > 0:
+                    if amount < target:
+                        penalty = (target - amount) / target * penalties["under_rdi"]
+                        nutrition_penalties.append((nutrient, "under", penalty, amount, target))
+                    elif amount > target * 2:  # Over 200%
+                        # Check if it's water or fat soluble
+                        soluble_type = "water_soluble" if nutrient in ["vitamin_c", "vitamin_b1", "vitamin_b2", "vitamin_b3", "vitamin_b5", "vitamin_b6", "vitamin_b9", "vitamin_b12"] else "fat_soluble"
+                        excess_ratio = (amount - target * 2) / target
+                        penalty = excess_ratio * penalties[soluble_type]
+                        nutrition_penalties.append((nutrient, "excess", penalty, amount, target))
+                    elif amount > target:
+                        penalty = (amount - target) / target * penalties["over_rdi"]
+                        nutrition_penalties.append((nutrient, "over", penalty, amount, target))
+
+            # Sort by penalty and log top contributors
+            nutrition_penalties.sort(key=lambda x: x[2], reverse=True)
+            top_penalties = nutrition_penalties[:3]
+            logger.debug(f"Top penalties: {top_penalties}")
+
+        return score
 
     def mutate_solution(solution):
-        """Mutate the solution by tweaking the food amounts."""
-        food = random.choice(list(solution.keys()))
-        solution[food] = max(0, solution[food] + random.uniform(-20, 20))  # Increased mutation range
-        return solution
+        # Create a copy to avoid modifying the original
+        mutated = solution.copy()
+
+        # Debug: log before mutation values for a few keys
+        if logger.level <= logging.DEBUG:
+            sample_foods = list(mutated.keys())[:3]
+            before_values = {food: mutated[food] for food in sample_foods}
+            logger.debug(f"Before mutation (sample): {before_values}")
+
+        # Apply mutation to multiple foods
+        for food in mutated.keys():
+            # Increase mutation probability for more diversity
+            if random.random() < randomness_factor:
+                # Use a wider range for mutation
+                change = random.uniform(-25, 25)
+                mutated[food] = max(0, mutated[food] + change)
+
+        # Debug: log after mutation values
+        if logger.level <= logging.DEBUG:
+            after_values = {food: mutated[food] for food in sample_foods}
+            logger.debug(f"After mutation (sample): {after_values}")
+
+        return mutated
 
     def crossover_solution(sol1, sol2):
-        """Create a new solution by combining two solutions."""
         new_solution = {}
+
+        # Debug: log parents for a few keys
+        if logger.level <= logging.DEBUG:
+            sample_foods = list(sol1.keys())[:3]
+            parent1_values = {food: sol1[food] for food in sample_foods}
+            parent2_values = {food: sol2[food] for food in sample_foods}
+            logger.debug(f"Crossover parents (sample): {parent1_values} x {parent2_values}")
+
         for food in sol1:
-            new_solution[food] = sol1[food] if random.random() < 0.5 else sol2[food]
+            # Use weighted average crossover for more exploration
+            alpha = random.random()
+            new_solution[food] = alpha * sol1[food] + (1 - alpha) * sol2[food]
+
+        # Debug: log result for a few keys
+        if logger.level <= logging.DEBUG:
+            child_values = {food: new_solution[food] for food in sample_foods}
+            logger.debug(f"Crossover child (sample): {child_values}")
+
         return new_solution
 
     # Initialize population
     population = [create_solution() for _ in range(population_size)]
     best_solution = None
     best_score = float('inf')
-
-    # Get run number at the start
     run_number = get_next_run_number()
+
+    socketio.emit('status_update', {'message': f'Starting optimization run #{run_number}'})
+    logger.info(f"Starting optimization run #{run_number}")
     print(f"Starting optimization run #{run_number}")
 
+    # Log initial population stats to have a baseline
+    initial_scores = [evaluate_solution(sol) for sol in population]
+    logger.debug(f"Initial population score stats: min={min(initial_scores):.2f}, max={max(initial_scores):.2f}, avg={sum(initial_scores)/len(initial_scores):.2f}")
+
+    start_time = time.time()
     for generation in range(generations):
+        if should_stop:
+            socketio.emit('status_update', {'message': 'Optimization stopped by user'})
+            logger.info("Optimization stopped by user")
+            print("Optimization stopped by user")
+            optimization_running = False
+            return None
+
         # Evaluate population
         scores = [(evaluate_solution(sol), sol) for sol in population]
         scores.sort(key=lambda x: x[0])
-        best_score, best_solution = scores[0]
+        current_best_score, current_best_solution = scores[0]
 
-        # Save this generation's data immediately
+        # Log population diversity metrics
+        all_scores = [score for score, _ in scores]
+        logger.debug(f"Gen {generation+1} score stats: min={min(all_scores):.2f}, max={max(all_scores):.2f}, avg={sum(all_scores)/len(all_scores):.2f}, std={np.std(all_scores):.2f}")
+
+        # Update best solution if improved
+        if current_best_score < best_score:
+            best_score = current_best_score
+            best_solution = current_best_solution.copy()
+            logger.debug(f"New best score at generation {generation + 1}: {best_score:.2f}")
+
+            # Log the best solution (sample)
+            sample_solution = {k: best_solution[k] for k in list(best_solution.keys())[:5] if best_solution[k] > 10}
+            logger.debug(f"Sample of best solution: {sample_solution}")
+        else:
+            # Log when score is not improving
+            logger.debug(f"No improvement at generation {generation + 1}. Current best: {current_best_score:.2f}, Overall best: {best_score:.2f}")
+
+        # Save generation data
         generation_data = pd.DataFrame([{
             'run_number': run_number,
             'generation': generation + 1,
             'score': best_score,
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }])
-
-        # Append to CSV file (create if doesn't exist)
         if os.path.exists('optimization_history.csv'):
             generation_data.to_csv('optimization_history.csv', mode='a', header=False, index=False)
         else:
             generation_data.to_csv('optimization_history.csv', index=False)
 
-        # Select the best solutions
-        population = [sol for _, sol in scores[:population_size // 2]]
+        # Emit update to UI
+        nutrition_report = generate_nutrition_report(best_solution, available_foods, rdi_targets, number_of_meals, meal_number)
+        socketio.emit('optimization_update', {
+            'generation': generation + 1,
+            'total_generations': generations,
+            'best_score': round(best_score, 2),
+            'nutrition_report': nutrition_report
+        })
+        logger.debug(f"Generation {generation + 1}/{generations}, Best Score: {best_score:.2f}")
+        print(f"Generation {generation + 1}/{generations}, Best Score: {best_score:.2f}")
 
-        # Create new population through crossover and mutation
+        time.sleep(0.1)  # Ensure UI updates
+
+        # Tournament selection instead of just selecting the top performers
         new_population = []
+        # Keep some elite solutions (top performers)
+        elite_size = max(1, int(population_size * 0.1))  # Keep top 10%
+        elite = [sol for _, sol in scores[:elite_size]]
+        new_population.extend(elite)
+        logger.debug(f"Kept {len(elite)} elite solutions")
+
+        # Count the number of crossovers and mutations performed
+        crossovers = 0
+        mutations = 0
+
+        # Use tournament selection for the rest
         while len(new_population) < population_size:
-            parent1, parent2 = random.sample(population, 2)
-            child = crossover_solution(parent1, parent2)
-            if random.random() < 0.1:
-                child = mutate_solution(child)
-            new_population.append(child)
-        population = new_population
-        print('.', end='', flush=True)
+            # Tournament selection
+            candidates = random.sample(population, min(5, len(population)))
+            candidate_scores = [(evaluate_solution(c), c) for c in candidates]
+            candidate_scores.sort(key=lambda x: x[0])
+            winner = candidate_scores[0][1]
 
-    execution_time = time.time() - start_time  # Calculate total time
-    print()
-    print(f"Execution time: {execution_time:.2f} seconds")
+            # Add mutation and crossover with probability
+            if len(new_population) >= 2 and random.random() < 0.7:
+                # Crossover
+                parent2 = random.choice(new_population)
+                child = crossover_solution(winner, parent2)
+                crossovers += 1
 
-    # Save the nutrition report instead of printing it
-    report_file = save_nutrition_report(best_solution,
-                                        available_foods,
-                                        rdi_targets,
-                                        best_score,
-                                        run_number,  # Add run_number parameter
-                                        number_of_meals,
-                                        meal_number,
-                                        generations=generations,
-                                        execution_time=execution_time,
-                                        diet_type=diet_type,
-                                        penalties=penalties)
+                # Mutation with higher probability
+                if random.random() < 0.4:
+                    child = mutate_solution(child)
+                    mutations += 1
+                new_population.append(child)
+            else:
+                # Just mutation
+                mutated = mutate_solution(winner)
+                mutations += 1
+                new_population.append(mutated)
 
-    print(f"Generation {generation + 1}/{generations}, Best Score: {best_score}")
-    print(f"Report saved to: {report_file}")
+        logger.debug(f"Generation {generation+1}: performed {crossovers} crossovers and {mutations} mutations")
 
-    # Round the amounts to make them more practical
+        # Evaluate the new population to get diversity stats
+        new_scores = [evaluate_solution(sol) for sol in new_population]
+        logger.debug(f"New population score stats: min={min(new_scores):.2f}, max={max(new_scores):.2f}, avg={sum(new_scores)/len(new_scores):.2f}, std={np.std(new_scores):.2f}")
+
+        # Ensure we have exactly population_size solutions
+        population = new_population[:population_size]
+
+    execution_time = time.time() - start_time
+    final_report = save_nutrition_report(
+        best_solution, available_foods, rdi_targets, best_score, run_number,
+        number_of_meals, meal_number, generations, execution_time, diet_type, penalties
+    )
+
+    final_report_data = json.load(open(final_report))
+    socketio.emit('optimization_complete', {
+        'final_report': {
+            'meal_info': final_report_data['meal_info'],
+            'foods': {food: float(amount[:-1]) for food, amount in final_report_data['food_quantities'].items()},
+            'nutrients': [
+                {
+                    'name': nutrient,
+                    'amount': float(''.join(c for c in info['amount'] if c.isdigit() or c == '.')),
+                    'unit': _get_unit(nutrient),
+                    'meal_percentage': float(info['meal_percentage'].rstrip('%')),
+                    'daily_percentage': float(info['daily_percentage'].rstrip('%')),
+                    'status': info['status']
+                } for nutrient, info in final_report_data['nutrition_profile'].items()
+            ],
+            'summary': final_report_data['summary']
+        }
+    })
+    logger.info(f"Optimization complete, execution time: {execution_time:.2f}s, report saved to: {final_report}")
+    print(f"Optimization complete, execution time: {execution_time:.2f}s, report saved to: {final_report}")
+
+    optimization_running = False
     return {
         "solution": {food: round(amount) for food, amount in best_solution.items() if amount > 10},
         "penalties": penalties
     }
 
-def _is_nutrition_sufficient(current, targets, threshold=0.90):
-    """Check if current nutrients are at least threshold percent of targets."""
-    for nutrient, target in targets.items():
-        if current.get(nutrient, 0) < threshold * target:
-            return False
-    return True
+def generate_nutrition_report(solution, food_data, rdi, number_of_meals, meal_number):
+    meal_rdi = {nutrient: target / number_of_meals for nutrient, target in rdi.items()}
+    final_nutrients = {nutrient: 0 for nutrient in meal_rdi}
+
+    for food, amount in solution.items():
+        for nutrient in meal_rdi:
+            if nutrient in food_data[food]:
+                nutrient_per_gram = food_data[food][nutrient] / food_data[food]['density']
+                final_nutrients[nutrient] += nutrient_per_gram * amount
+
+    report = {
+        'meal_info': {
+            'meal_number': meal_number,
+            'number_of_meals': number_of_meals,
+            'target_percentage': 100 / number_of_meals
+        },
+        'foods': {food: round(amount) for food, amount in solution.items() if amount > 10},
+        'nutrients': [
+            {
+                'name': nutrient,
+                'amount': round(amount, 1),
+                'unit': _get_unit(nutrient),
+                'meal_percentage': round(amount / meal_rdi[nutrient] * 100, 1),
+                'daily_percentage': round(amount / rdi[nutrient] * 100, 1),
+                'status': "LOW" if amount/meal_rdi[nutrient]*100 < 80 else "OK" if amount/meal_rdi[nutrient]*100 < 150 else "HIGH"
+            } for nutrient, amount in final_nutrients.items()
+        ],
+        'summary': {
+            'ok': sum(1 for n, a in final_nutrients.items() if 80 <= a/meal_rdi[n]*100 < 150),
+            'low': sum(1 for n, a in final_nutrients.items() if a/meal_rdi[n]*100 < 80),
+            'high': sum(1 for n, a in final_nutrients.items() if a/meal_rdi[n]*100 >= 150),
+            'total': len(meal_rdi)
+        }
+    }
+    return report
+
+@app.route('/')
+def index():
+    foods = {row['Food Name']: True for _, row in df.iterrows()}
+    logger.debug(f"Rendering index with {len(foods)} foods")
+    return render_template('index.html', foods=foods)
+
+@app.route('/start_optimization', methods=['POST'])
+def start_optimization():
+    global optimization_running, optimization_thread, should_stop
+
+    logger.debug("Received start_optimization request")
+    if optimization_running:
+        logger.warning("Optimization already running")
+        return jsonify({'status': 'error', 'message': 'Optimization already running'})
+
+    data = request.get_json()
+    logger.debug(f"Request data: {data}")
+    selected_foods = data.get('selected_foods', [])
+    food_df = df[df['Food Name'].isin(selected_foods)]
+
+    if len(food_df) == 0:
+        logger.error("No foods selected")
+        return jsonify({'status': 'error', 'message': 'No foods selected'})
+
+    params = {
+        'number_of_meals': data.get('number_of_meals', 1),
+        'meal_number': data.get('meal_number', 1),
+        'population_size': data.get('population_size', 50),
+        'generations': data.get('generations', 100),
+        'diet_type': 'all',
+        'randomness_factor': 0.3
+    }
+    logger.debug(f"Optimization params: {params}")
+
+    should_stop = False
+    optimization_running = True
+    optimization_thread = threading.Thread(
+        target=optimize_nutrition_core,
+        args=(food_df, nutrient_mapping, rdi_values, params)
+    )
+    optimization_thread.daemon = True
+    logger.debug("Starting optimization thread")
+    optimization_thread.start()
+    logger.info("Optimization thread started successfully")
+    return jsonify({'status': 'success', 'message': 'Optimization started'})
+
+@app.route('/stop_optimization', methods=['POST'])
+def stop_optimization():
+    global should_stop, optimization_running, optimization_thread
+
+    logger.debug("Received stop_optimization request")
+    if optimization_running:
+        should_stop = True
+        optimization_thread.join()
+        optimization_running = False
+        logger.info("Optimization stopped successfully")
+        return jsonify({'status': 'success', 'message': 'Optimization stopped'})
+    logger.warning("No optimization running to stop")
+    return jsonify({'status': 'error', 'message': 'No optimization running'})
 
 def _calculate_nutrition_score(current, targets, penalties):
-    """Calculate how far current nutrients are from targets with randomized penalties."""
     score = 0
-
-    # Special handling for energy/calories
     energy_key = "Energy with dietary fibre, equated (kJ)"
     if energy_key in current and energy_key in targets:
         energy = current[energy_key]
         energy_target = targets[energy_key]
-
-        rdi_path = os.path.join('rdi', 'rdi.json')
         with open(rdi_path, 'r') as f:
             nutrient_data = json.load(f)
             rdi = nutrient_data[energy_key]['rdi']
             ul = nutrient_data[energy_key]['ul']
-
         if energy < rdi:
             score += ((rdi - energy) / rdi) ** 2 * penalties["under_rdi"]
         elif energy > ul:
             score += ((energy - ul) / ul) ** 2 * penalties["over_ul"]
 
-    # Handle other nutrients
     water_soluble_vitamins = [
-        'Vitamin C (mg)',
-        'Thiamin (B1) (mg)',
-        'Riboflavin (B2) (mg)',
-        'Niacin (B3) (mg)',
-        'Pantothenic acid (B5) (mg)',
-        'Pyridoxine (B6) (mg)',
-        'Biotin (B7) (ug)',
-        'Cobalamin (B12) (ug)',
-        'Total folates (ug)'
+        'Vitamin C (mg)', 'Thiamin (B1) (mg)', 'Riboflavin (B2) (mg)', 'Niacin (B3) (mg)',
+        'Pantothenic acid (B5) (mg)', 'Pyridoxine (B6) (mg)', 'Biotin (B7) (ug)',
+        'Cobalamin (B12) (ug)', 'Total folates (ug)'
     ]
-
     fat_soluble_vitamins = [
-        'Vitamin A retinol equivalents (ug)',
-        'Vitamin D3 equivalents (ug)',
-        'Vitamin E (mg)'
+        'Vitamin A retinol equivalents (ug)', 'Vitamin D3 equivalents (ug)', 'Vitamin E (mg)'
     ]
 
     for nutrient, target in targets.items():
         if nutrient == energy_key:
             continue
-
         current_value = current.get(nutrient, 0)
         if current_value < target:
             score += ((target - current_value) / target) ** 2 * penalties["under_rdi"]
@@ -281,18 +474,11 @@ def _calculate_nutrition_score(current, targets, penalties):
             else:
                 penalty = penalties["over_rdi"]
             score += ((current_value - target) / target) ** 2 * penalty
-
     return score
 
-def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
-                         number_of_meals=3, meal_number=1, generations=100,
-                         execution_time=0, diet_type='all', penalties=None):
-    """Save a detailed nutrition report as JSON and HTML."""
-
-    # Scale RDI for a single meal
+def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number, number_of_meals=3, meal_number=1, generations=100, execution_time=0, diet_type='all', penalties=None):
     meal_rdi = {nutrient: float(target) / number_of_meals for nutrient, target in rdi.items()}
     recipe_timestamp = datetime.now().strftime('%Y-%m-%d')
-    # Calculate nutrient totals
     final_nutrients = {nutrient: 0 for nutrient in meal_rdi}
 
     for food, amount in foods_consumed.items():
@@ -301,7 +487,6 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
                 nutrient_per_gram = float(food_data[food][nutrient]) / float(food_data[food]['density'])
                 final_nutrients[nutrient] += nutrient_per_gram * amount
 
-    # Create report dictionary
     report = {
         "meal_info": {
             "run_number": int(run_number),
@@ -312,506 +497,66 @@ def save_nutrition_report(foods_consumed, food_data, rdi, score, run_number,
             "number_of_foods": len(foods_consumed),
             "execution_time_seconds": float(execution_time),
             "date": str(recipe_timestamp),
-            "penalties": {
-                "under_rdi": penalties["under_rdi"],
-                "over_rdi": penalties["over_rdi"],
-                "over_ul": penalties["over_ul"],
-                "water_soluble": penalties["water_soluble"],
-                "fat_soluble": penalties["fat_soluble"]
-            }
+            "penalties": penalties
         },
-        "food_quantities": {
-            str(food): f"{float(amount):.1f}g"
-            for food, amount in sorted(
-                foods_consumed.items(),
-                key=lambda x: float(x[1]),
-                reverse=True
-            )
-        },
+        "food_quantities": {str(food): f"{float(amount):.1f}g" for food, amount in sorted(foods_consumed.items(), key=lambda x: float(x[1]), reverse=True)},
         "nutrition_profile": {
             str(nutrient): {
                 "amount": f"{float(amount):.1f}{_get_unit(nutrient)}",
                 "meal_percentage": f"{(float(amount)/float(meal_rdi[nutrient])*100):.1f}%",
                 "daily_percentage": f"{(float(amount)/float(rdi[nutrient])*100):.1f}%",
-                "status": "LOW" if float(amount)/float(meal_rdi[nutrient])*100 < 80
-                         else "OK" if float(amount)/float(meal_rdi[nutrient])*100 < 150
-                         else "HIGH"
+                "status": "LOW" if float(amount)/float(meal_rdi[nutrient])*100 < 80 else "OK" if float(amount)/float(meal_rdi[nutrient])*100 < 150 else "HIGH"
             } for nutrient, amount in final_nutrients.items()
         },
         "summary": {
-            "nutrients_at_good_levels": sum(1 for n, a in final_nutrients.items()
-                                          if 80 <= float(a)/float(meal_rdi[n])*100 < 150),
-            "nutrients_below_target": sum(1 for n, a in final_nutrients.items()
-                                        if float(a)/float(meal_rdi[n])*100 < 80),
-            "nutrients_above_target": sum(1 for n, a in final_nutrients.items()
-                                        if float(a)/float(meal_rdi[n])*100 >= 150),
+            "nutrients_at_good_levels": sum(1 for n, a in final_nutrients.items() if 80 <= float(a)/float(meal_rdi[n])*100 < 150),
+            "nutrients_below_target": sum(1 for n, a in final_nutrients.items() if float(a)/float(meal_rdi[n])*100 < 80),
+            "nutrients_above_target": sum(1 for n, a in final_nutrients.items() if float(a)/float(meal_rdi[n])*100 >= 150),
             "total_nutrients": len(meal_rdi)
         }
     }
 
-    # Save JSON
     json_filename = os.path.join('recipes', 'json', f'meal_{run_number}_{timestamp}.json')
+    os.makedirs(os.path.dirname(json_filename), exist_ok=True)
     with open(json_filename, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2)
-
-    # Generate HTML
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-    <title>Meal {run_number} - Nutrition Report</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
-        h1, h2 {{ color: #333; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
-        th, td {{ padding: 12px; text-align: left; border: 1px solid #ddd; }}
-        th {{ background-color: #f5f5f5; }}
-        tr:nth-child(even) {{ background-color: #f9f9f9; }}
-        .low {{ color: #dc3545; }}
-        .ok {{ color: #28a745; }}
-        .high {{ color: #ffc107; }}
-        .summary {{ background-color: #f8f9fa; padding: 20px; border-radius: 5px; }}
-        .score {{ font-size: 1.2em; font-weight: bold; }}
-    </style>
-</head>
-<body>
-    <h1>Meal {run_number} Nutrition Report</h1>
-
-    <div class="summary">
-        <p><span class="score">Optimization Score: {score:.2f}</span></p>
-        <p>Diet Type: {diet_type}</p>
-        <p>Execution Time: {execution_time:.1f} seconds</p>
-        <p>Generations: {generations}</p>
-        <p>Foods Used: {len(foods_consumed)}</p>
-        <p>Date: {recipe_timestamp}</p>
-    </div>
-
-    <h2>Food Quantities</h2>
-    <table>
-        <tr><th>Food</th><th>Amount</th></tr>
-        {''.join(f"<tr><td>{food}</td><td>{amount}</td></tr>"
-                 for food, amount in report['food_quantities'].items())}
-    </table>
-
-    <h2>Nutrition Profile</h2>
-    <table>
-        <tr>
-            <th>Nutrient</th>
-            <th>Amount</th>
-            <th>% of Meal Target</th>
-            <th>% of Daily RDI</th>
-            <th>Status</th>
-        </tr>
-        {''.join(f"<tr><td>{nutrient}</td>"
-                 f"<td>{info['amount']}</td>"
-                 f"<td>{info['meal_percentage']}</td>"
-                 f"<td>{info['daily_percentage']}</td>"
-                 f"<td class='{info['status'].lower()}'>{info['status']}</td></tr>"
-                 for nutrient, info in report['nutrition_profile'].items())}
-    </table>
-
-    <h2>Summary</h2>
-    <div class="summary">
-        <p>Nutrients at good levels: {report['summary']['nutrients_at_good_levels']} of {report['summary']['total_nutrients']}</p>
-        <p>Nutrients below target: {report['summary']['nutrients_below_target']} of {report['summary']['total_nutrients']}</p>
-        <p>Nutrients above target: {report['summary']['nutrients_above_target']} of {report['summary']['total_nutrients']}</p>
-    </div>
-    <div class="penalties">
-        <h2>Optimization Penalties</h2>
-        <ul>
-            <li>Under RDI: {penalties["under_rdi"]:.2f}x</li>
-            <li>Over RDI: {penalties["over_rdi"]:.2f}x</li>
-            <li>Over UL: {penalties["over_ul"]:.2f}x</li>
-            <li>Water-soluble vitamins: {penalties["water_soluble"]:.2f}x</li>
-            <li>Fat-soluble vitamins: {penalties["fat_soluble"]:.2f}x</li>
-        </ul>
-    </div>
-</body>
-</html>"""
-
-    # Save HTML
-    html_filename = os.path.join('recipes', 'html', f'meal_{run_number}_{timestamp}.html')
-    with open(html_filename, 'w', encoding='utf-8') as f:
-        f.write(html)
-
     return json_filename
 
-def print_nutrition_report(foods_consumed, food_data, rdi, number_of_meals=3, meal_number=1):
-    """Print a detailed nutrition report based on foods consumed."""
-    # Scale RDI for a single meal
-    meal_rdi = {nutrient: target / number_of_meals for nutrient, target in rdi.items()}
-
-    # Calculate nutrient totals
-    final_nutrients = {nutrient: 0 for nutrient in meal_rdi}
-
-    for food, amount in foods_consumed.items():
-        for nutrient in meal_rdi:
-            if nutrient in food_data[food]:
-                nutrient_per_gram = food_data[food][nutrient] / food_data[food]['density']
-                final_nutrients[nutrient] += nutrient_per_gram * amount
-
-    # Print meal info
-    print(f"\n=== MEAL {meal_number} OF {number_of_meals} ===")
-    print(f"(Each meal targets {100/number_of_meals:.1f}% of daily nutrition needs)")
-
-    # Print food quantities
-    print("\nRecommended food quantities (in grams):")
-    for food, amount in foods_consumed.items():
-        print(f"{food}: {amount}g")
-
-    # Print resulting nutrition profile
-    print("\nNutrition profile for this meal:")
-    print(f"{'Nutrient':<12} {'Amount':<8} {'% of Meal Target':<16} {'% of Daily RDI':<16} {'Status'}")
-    print("-" * 70)
-
-    for nutrient, amount in final_nutrients.items():
-        meal_percentage = amount/meal_rdi[nutrient]*100
-        daily_percentage = amount/rdi[nutrient]*100
-        status = "LOW" if meal_percentage < 80 else "OK" if meal_percentage < 150 else "HIGH"
-        print(f"{nutrient:<12} {amount:.1f}{_get_unit(nutrient):<3} {meal_percentage:.1f}%{' ':9} "
-              f"{daily_percentage:.1f}%{' ':9} {status}")
-
-    print("\nSummary:")
-    nutrients_low = sum(1 for n, a in final_nutrients.items() if a/meal_rdi[n]*100 < 80)
-    nutrients_ok = sum(1 for n, a in final_nutrients.items() if 80 <= a/meal_rdi[n]*100 < 150)
-    nutrients_high = sum(1 for n, a in final_nutrients.items() if a/meal_rdi[n]*100 >= 150)
-
-    print(f"- Nutrients at good levels: {nutrients_ok} of {len(meal_rdi)}")
-    print(f"- Nutrients below target: {nutrients_low} of {len(meal_rdi)}")
-    print(f"- Nutrients above target: {nutrients_high} of {len(meal_rdi)}")
-
 def _get_unit(nutrient):
-    """Get the appropriate unit for a nutrient."""
-    # Look for unit in parentheses at end of nutrient name
     if '(mg)' in nutrient:
         return 'mg'
     elif '(ug)' in nutrient:
         return 'μg'
     elif '(g)' in nutrient:
         return 'g'
-    else:
-        return ''  # Default case
-
-# Add this function before optimize_nutrition
-def clean_column_name(col_name):
-    """Clean column names by removing extra whitespace and newlines"""
-    return col_name.strip().replace('\n', '')
-
-def generate_index():
-    """Generate both Markdown and HTML index files for meal plans"""
-    print(f"Generating index files...")
-    meals = []
-
-    # Read all JSON files in the recipes directory
-    recipes_dir = "recipes/json"
-    for filename in os.listdir(recipes_dir):
-        if filename.endswith(".json"):
-            filepath = os.path.join(recipes_dir, filename)
-            with open(filepath, 'r') as f:
-                data = json.load(f)
-
-                meal_info = data["meal_info"]
-                summary = data["summary"]
-                food_items = len(data["food_quantities"])
-
-                diet_type = meal_info.get("diet_type", "all")
-
-                # Handle missing penalties field with default values
-                default_penalties = {
-                    "under_rdi": 2.5,
-                    "over_rdi": 0.3,
-                    "over_ul": 2,
-                    "water_soluble": 0.2,
-                    "fat_soluble": 0.4
-                }
-
-                meals.append({
-                    "filename": filename,
-                    "run_number": meal_info["run_number"],
-                    'timestamp': meal_info.get('date', ""),
-                    "diet_type": diet_type,
-                    "optimization_score": meal_info["optimization_score"],
-                    "nutrients_ok": summary["nutrients_at_good_levels"],
-                    "nutrients_low": summary["nutrients_below_target"],
-                    "nutrients_high": summary["nutrients_above_target"],
-                    "food_items": food_items,
-                    "generations": meal_info["generations"],
-                    "execution_time": meal_info["execution_time_seconds"],
-                    'penalties': meal_info.get('penalties', default_penalties)
-                })
-
-    # Sort meals by optimization score (ascending - better scores first)
-    meals.sort(key=lambda x: x["optimization_score"])
-
-    # Generate Markdown
-    markdown = "# Genetic Algorithm Optimised Nutrition Recipes\n\n"
-    markdown += "Generated on: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + "\n\n"
-    markdown += "| Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |\n"
-    markdown += "|-------|------|-------|-------|----------------------|------------|----------|----------|\n"
-
-    # Generate HTML
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Genetic Algorithm Optimised Nutrition Recipes</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; }}
-        table {{ border-collapse: collapse; width: 100%; }}
-        th, td {{ padding: 8px; text-align: left; border: 1px solid #ddd; }}
-        th {{ background-color: #f2f2f2; }}
-        tr:nth-child(even) {{ background-color: #f9f9f9; }}
-        tr:hover {{ background-color: #f5f5f5; }}
-        .good {{ color: green; }}
-        .warning {{ color: orange; }}
-        .error {{ color: red; }}
-    </style>
-</head>
-<body>
-    <a href="https://github.com/alexlaverty/optimize-nutrition" target="_blank"><img src="forkme_right_darkblue_121621.svg" style="position:absolute;top:0;right:0;" alt="Fork me on GitHub"></a>
-    <h1>Genetic Algorithm Optimised Nutrition Recipes</h1>
-    <div class="description">
-        <p>This table shows meal plans optimized using a genetic algorithm to meet daily nutritional requirements.
-        Each row represents a different optimization run, where lower scores indicate better nutritional balance.
-        The "Diet" column shows the type of diet (all foods, vegan, or whole food plant-based),
-        "Foods" shows how many ingredients were used, and "Nutrients" shows how many nutrients are at good levels,
-        below target, and above target respectively. Click on any row to view the detailed recipe and nutritional analysis.</p>
-    </div>
-    <p>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-    <table>
-        <tr>
-            <th>#</th>
-            <th>Timestamp</th>
-            <th>Diet</th>
-            <th>Score</th>
-            <th>Foods</th>
-            <th>Nutrients (OK/Low/High)</th>
-            <th>Generations</th>
-            <th>Time (s)</th>
-            <th>View Recipe</th>
-        </tr>
-"""
-
-    for idx, meal in enumerate(meals, start=1):
-        # Add markdown row
-        markdown += f"| {meal['run_number']} | {meal['diet_type']} | {meal['optimization_score']:.2f} | "
-        markdown += f"{meal['food_items']} | {meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']} | "
-        markdown += f"{meal['generations']} | {meal['execution_time']:.1f} | "
-        markdown += f"[{os.path.basename(meal['filename'])}](recipes/html/{os.path.splitext(meal['filename'])[0]}.html) |\n"
-
-        # Add HTML row
-        score_class = 'good' if meal['optimization_score'] < 5 else 'warning' if meal['optimization_score'] < 10 else 'error'
-        html += f"""        <tr>
-            <td>{idx}</td>
-            <td>{meal['timestamp']}</td>
-            <td>{meal['diet_type']}</td>
-            <td class="{score_class}">{meal['optimization_score']:.2f}</td>
-            <td>{meal['food_items']}</td>
-            <td>{meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']}</td>
-            <td>{meal['generations']}</td>
-            <td>{meal['execution_time']:.1f}</td>
-            <td><a href="{os.path.splitext(meal['filename'])[0]}.html">{os.path.basename(meal['filename'])}</a></td>
-        </tr>
-"""
-
-    # Close HTML
-    html += """    </table>
-</body>
-</html>
-"""
-
-    # Save both files
-    with open("README.md", "w") as f:
-        f.write(markdown)
-
-    with open("recipes/html/index.html", "w") as f:
-        f.write(html)
-
-    print(f"Generated README.md and recipes/html/index.html")
+    return ''
 
 def init_directories():
-    """Initialize directory structure for recipes and output files."""
-    base_dir = 'recipes'
-    subdirs = ['json', 'html']
-
-    for subdir in subdirs:
-        dir_path = os.path.join(base_dir, subdir)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-            print(f"Created directory: {dir_path}")
-
-    # Create RDI directory
-    rdi_dir = 'rdi'
-    if not os.path.exists(rdi_dir):
-        os.makedirs(rdi_dir)
-        print(f"Created directory: {rdi_dir}")
-
-def cleanup_high_score_recipes(max_score=20, max_files=250):
-    """
-    Remove recipe files based on score threshold and total file count limit.
-
-    Args:
-        max_score (float): Maximum allowed optimization score (default: 20)
-        max_files (int): Maximum number of recipe files to keep (default: 250)
-    """
-    print(f"\nCleaning up recipes (max score: {max_score}, max files: {max_files})...")
-    recipes = []
-    removed_count = 0
-
-    # Collect all recipe data
-    recipes_dir = "recipes/json"
-    for filename in os.listdir(recipes_dir):
-        if filename.endswith(".json"):
-            filepath = os.path.join(recipes_dir, filename)
-            try:
-                with open(filepath, 'r') as f:
-                    data = json.load(f)
-                    score = data["meal_info"]["optimization_score"]
-                    recipes.append({
-                        "filename": filename,
-                        "score": score,
-                        "filepath": filepath
-                    })
-            except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
-                print(f"Error processing {filename}: {str(e)}")
-                continue
-
-    # Sort recipes by score (best scores first)
-    recipes.sort(key=lambda x: x["score"])
-
-    # Process recipes
-    for idx, recipe in enumerate(recipes):
-        should_remove = False
-        reason = ""
-
-        if recipe["score"] > max_score:
-            should_remove = True
-            reason = f"score too high ({recipe['score']:.2f} > {max_score})"
-        elif idx >= max_files:
-            should_remove = True
-            reason = f"exceeds file limit ({idx + 1} > {max_files})"
-
-        if should_remove:
-            # Remove JSON file
-            os.remove(recipe["filepath"])
-
-            # Remove corresponding HTML file
-            html_file = os.path.join("recipes/html",
-                                   os.path.splitext(recipe["filename"])[0] + ".html")
-            if os.path.exists(html_file):
-                os.remove(html_file)
-
-            removed_count += 1
-            print(f"Removed recipe {recipe['filename']} ({reason})")
-
-    remaining_count = len(recipes) - removed_count
-    print(f"\nCleanup complete:")
-    print(f"- Removed {removed_count} recipes")
-    print(f"- {remaining_count} recipes remaining")
-    print(f"- Best score: {recipes[0]['score']:.2f}")
-    print(f"- Worst remaining score: {recipes[min(remaining_count-1, len(recipes)-1)]['score']:.2f}")
-
+    logger.debug("Initializing directories")
+    os.makedirs('recipes/json', exist_ok=True)
+    os.makedirs('recipes/html', exist_ok=True)
+    os.makedirs('rdi', exist_ok=True)
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description='Optimize nutrition using genetic algorithm')
-    parser.add_argument('--generations', type=int, default=None,
-                       help='Number of generations to run (default: random 50-400)')
-    parser.add_argument('--foods', type=int, default=None,
-                       help='Number of foods to select (default: random 10-30)')
+    parser.add_argument('--mode', choices=['cli', 'ui'], default='cli', help='Run mode: cli or ui')
+    parser.add_argument('--generations', type=int, default=100)
+    parser.add_argument('--foods', type=int, default=None)
     args = parser.parse_args()
 
-    start_time = time.time()
     init_directories()
-    # Load the Excel file
-    file_path = "Release 2 - Nutrient file.xlsx"
-    df = pd.read_excel(file_path, sheet_name="All solids & liquids per 100g")
 
-    # Load the RDI data
-    rdi_path = os.path.join('rdi', 'rdi.json')
-    with open(rdi_path, 'r') as f:
-        nutrient_mapping = json.load(f)
-
-    # Settings that will be the same for all runs
-    number_of_meals = 1
-    meal_number = 1
-    rdi_values = {nutrient: details['rdi'] for nutrient, details in nutrient_mapping.items()}
-
-    # Run for each diet type
-    for run_type in ['all', 'vegan', 'wfpb', 'nutrient_dense']:
-    #for run_type in ['nutrient_dense']:
-        print(f"\n=== Starting {run_type.upper()} foods optimization ===")
-
-        # Filter foods based on diet type
-        working_df = df.copy()
-        if run_type != 'all':
-            try:
-                # Load diet-specific rules
-                config_file = os.path.join('diets', f'{run_type}.json')
-                with open(config_file, 'r') as f:
-                    diet_config = json.load(f)
-
-                initial_food_count = len(working_df)
-
-                # First apply inclusion filter if specified
-                if 'included_terms' in diet_config:
-                    # Convert all included terms to lowercase once
-                    included_terms = [term.lower() for term in diet_config['included_terms']]
-
-                    # Create inclusion mask using lowercase comparison
-                    inclusion_mask = working_df['Food Name'].str.lower().apply(
-                        lambda x: any(term in x for term in included_terms)
-                    )
-                    working_df = working_df[inclusion_mask]
-                    print(f"Included {len(working_df)} {run_type} foods based on inclusion criteria")
-
-                # Then apply exclusion filter
-                excluded_terms = diet_config.get('excluded_terms', [])
-                if excluded_terms:
-                    # Create exclusion mask - remove foods that match any excluded term
-                    exclusion_mask = ~working_df['Food Name'].str.lower().apply(
-                        lambda x: any(term.lower() in x for term in excluded_terms)
-                    )
-                    working_df = working_df[exclusion_mask]
-                    print(f"Removed {initial_food_count - len(working_df)} foods based on exclusion criteria")
-
-                print(f"Final food count: {len(working_df)} foods")
-
-                if len(working_df) == 0:
-                    print(f"Warning: No foods remain after filtering for {run_type} diet")
-                    continue
-
-            except FileNotFoundError:
-                print(f"Warning: {config_file} not found, skipping {run_type} optimization")
-                continue
-
-        # Randomly select between 5-20 foods
-        n_foods = args.foods if args.foods is not None else random.randint(10, 30)
-        random_foods = working_df.sample(n=n_foods)
-        print(f"Selected {n_foods} random foods for optimization")
-
-        # Generate random number of generations
-        generations = args.generations if args.generations is not None else random.randint(50, 400)
-        #generations = 3
-        print(f"Selected {generations} for number of generations")
-
-        # Clean column names
-        random_foods.columns = [clean_column_name(col) for col in random_foods.columns]
-
-        # Run optimization
-        result = optimize_nutrition(
-            food_df=random_foods,
-            nutrient_mapping=nutrient_mapping,
-            rdi_targets=rdi_values,
-            number_of_meals=number_of_meals,
-            meal_number=meal_number,
-            randomness_factor=0.4,
-            population_size=100,
-            generations=generations,
-            diet_type=run_type
+    if args.mode == 'ui':
+        logger.info("Starting Flask app in UI mode")
+        socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    else:
+        logger.info("Running in CLI mode")
+        start_time = time.time()
+        n_foods = args.foods if args.foods else random.randint(10, 30)
+        random_foods = df.sample(n=n_foods)
+        result = optimize_nutrition_core(
+            random_foods,
+            nutrient_mapping,
+            rdi_values,
+            {'number_of_meals': 1, 'meal_number': 1, 'population_size': 50, 'generations': args.generations, 'diet_type': 'all', 'randomness_factor': 0.3}
         )
-
-        print(f"=== Completed {run_type.upper()} foods optimization ===\n")
-
-    cleanup_high_score_recipes(max_score=20, max_files=250)
-    # Generate final index
-    generate_index()
