@@ -39,7 +39,8 @@
         "Chicken",
         "Cabbage",
         "Onion",
-        "Garlic"
+        "Garlic",
+        "Chicken, liver",
     ],
     "excluded_terms": [
         "abalone",
