@@ -1,0 +1,29 @@
+# Git files
+.git
+.gitignore
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Python virtual environment
+.venv
+venv
+env
+*/env
+*/venv
+*.pyc
+__pycache__/
+
+# IDE/Editor specific files
+.idea/
+.vscode/
+*.swp
+
+# Local data/output (optional, if you don't want previous results in image)
+# recipes/
+# optimization_history.csv
+
+# OS specific files
+.DS_Store
+Thumbs.db
