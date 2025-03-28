@@ -1,6 +1,6 @@
 # Genetic Algorithm Nutrition Optimizer
 
-This project uses a Genetic Algorithm (GA) to optimize meal plans based on nutritional data from an Excel spreadsheet. The goal is to find combinations and quantities of foods that best meet Recommended Daily Intake (RDI) targets for various nutrients, while considering optional dietary restrictions (like vegan or WFPB).
+This project uses a Genetic Algorithm (GA) to optimize meal plans based on nutritional data from the [Australian Food Composition Database Nutrient Excel spreadsheet](https://www.foodstandards.gov.au/science-data/monitoringnutrients/afcd/australian-food-composition-database-download-excel-files#nutrient). The goal is to find combinations and quantities of foods that best meet Recommended Daily Intake (RDI) targets for various nutrients, while considering optional dietary restrictions (like vegan or WFPB).
 
 The application can be run either as a Command Line Interface (CLI) tool or as an interactive Web User Interface (Web UI) built with Flask and SocketIO.
 
