@@ -921,25 +921,25 @@ def generate_index(recipes_base_dir="recipes"):
     # Sort meals by optimization score (ascending - better scores first)
     meals.sort(key=lambda x: x["optimization_score"])
 
-    # --- Generate Markdown (README.md) ---
-    md_path = "README.md"
-    try:
-        with open(md_path, "w", encoding='utf-8') as f:
-            f.write("# Genetic Algorithm Optimised Nutrition Recipes\n\n")
-            f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-            f.write("| Run # | Diet | Score | Foods | Nutrients (OK/Low/High/Total) | Generations | Time (s) | HTML Report |\n")
-            f.write("|-------|------|-------|-------|-------------------------------|-------------|----------|-------------|\n")
-            for meal in meals:
-                 # Include total nutrients in the string
-                nutrients_str = f"{meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']}/{meal['total_nutrients']}"
-                html_link = os.path.join(recipes_base_dir, "html", meal['filename_html']).replace('\\', '/') # Use forward slashes for web links
-                f.write(f"| {meal['run_number']} | {meal['diet_type']} | {meal['optimization_score']:.2f} | "
-                        f"{meal['food_items']} | {nutrients_str} | "
-                        f"{meal['generations']} | {meal['execution_time']:.1f} | "
-                        f"[{meal['filename_html']}]({html_link}) |\n")
-        logging.info(f"Generated {md_path}")
-    except IOError as e:
-        logging.error(f"Failed to write {md_path}: {e}")
+    # # --- Generate Markdown (README.md) ---
+    # md_path = "README.md"
+    # try:
+    #     with open(md_path, "w", encoding='utf-8') as f:
+    #         f.write("# Genetic Algorithm Optimised Nutrition Recipes\n\n")
+    #         f.write(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+    #         f.write("| Run # | Diet | Score | Foods | Nutrients (OK/Low/High/Total) | Generations | Time (s) | HTML Report |\n")
+    #         f.write("|-------|------|-------|-------|-------------------------------|-------------|----------|-------------|\n")
+    #         for meal in meals:
+    #              # Include total nutrients in the string
+    #             nutrients_str = f"{meal['nutrients_ok']}/{meal['nutrients_low']}/{meal['nutrients_high']}/{meal['total_nutrients']}"
+    #             html_link = os.path.join(recipes_base_dir, "html", meal['filename_html']).replace('\\', '/') # Use forward slashes for web links
+    #             f.write(f"| {meal['run_number']} | {meal['diet_type']} | {meal['optimization_score']:.2f} | "
+    #                     f"{meal['food_items']} | {nutrients_str} | "
+    #                     f"{meal['generations']} | {meal['execution_time']:.1f} | "
+    #                     f"[{meal['filename_html']}]({html_link}) |\n")
+    #     logging.info(f"Generated {md_path}")
+    # except IOError as e:
+    #     logging.error(f"Failed to write {md_path}: {e}")
 
 
     # --- Generate HTML Index (recipes/html/index.html) ---
