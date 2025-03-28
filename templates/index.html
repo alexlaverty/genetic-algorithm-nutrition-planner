@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Optimizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 700px; margin: auto; }
+        h1 { color: #0056b3; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; width: 100%; }
+        button:hover { background-color: #218838; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 4px; border-left: 5px solid #0056b3; min-height: 40px; font-size: 0.95em; }
+        #chart-container { margin-top: 20px; }
+        #results { margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
+        #results a { color: #0056b3; text-decoration: none; }
+        #results a:hover { text-decoration: underline; }
+        .error-message { color: #dc3545; font-weight: bold; }
+        .progress-container { width: 100%; background-color: #eee; border-radius: 4px; margin-top: 5px; display: none; /* Initially hidden */ }
+        .progress-bar { width: 0%; height: 20px; background-color: #4caf50; border-radius: 4px; text-align: center; line-height: 20px; color: white; font-size: 0.9em; transition: width 0.1s ease-out; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nutrition Optimizer</h1>
+
+        <div id="controls">
+            <div class="form-group">
+                <label for="diet_type">Diet Type:</label>
+                <select id="diet_type">
+                    <option value="all">All Foods</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="wfpb">Whole Food Plant-Based (WFPB)</option>
+                    <option value="nutrient_dense">Nutrient Dense (Example)</option>
+                    <!-- Add other diet types as defined in your 'diets' folder -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="num_foods">Number of Foods (10-100):</label>
+                <input type="number" id="num_foods" value="25" min="10" max="100">
+            </div>
+            <div class="form-group">
+                <label for="generations">Generations (10-1000):</label>
+                <input type="number" id="generations" value="150" min="10" max="1000">
+            </div>
+             <div class="form-group">
+                <label for="population_size">Population Size (10-200):</label>
+                <input type="number" id="population_size" value="50" min="10" max="200">
+            </div>
+            <button id="startButton">Start Optimization</button>
+        </div>
+
+        <div id="status">Awaiting optimization start...</div>
+        <div class="progress-container" id="progressContainer">
+             <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+
+        <div id="chart-container">
+            <canvas id="scoreChart"></canvas>
+        </div>
+
+        <div id="results"></div>
+
+    </div>
+
+    <script>
+        // Establish Socket.IO connection
+        const socket = io(); // Connects to the server that served the page
+
+        const startButton = document.getElementById('startButton');
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressContainer');
+
+        let scoreChart = null; // Chart instance
+        let chartData = {
+            labels: [],
+            datasets: [{
+                label: 'Best Score per Generation',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: false
+            }]
+        };
+
+        function initializeChart() {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+             if (scoreChart) {
+                 scoreChart.destroy(); // Destroy previous chart instance if exists
+             }
+            scoreChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true, // Start y-axis near the lowest score? Maybe false is better.
+                            title: {
+                                display: true,
+                                text: 'Score (Lower is Better)'
+                            }
+                        },
+                        x: {
+                             title: {
+                                display: true,
+                                text: 'Generation'
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 200 // Faster animation for real-time feel
+                    }
+                }
+            });
+        }
+
+         function resetUI() {
+            statusDiv.textContent = 'Awaiting optimization start...';
+            statusDiv.className = ''; // Reset class
+            resultsDiv.innerHTML = '';
+            progressContainer.style.display = 'none';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            // Reset chart data
+            chartData.labels = [];
+            chartData.datasets[0].data = [];
+            if (scoreChart) {
+                scoreChart.update(); // Update chart with empty data
+            } else {
+                 initializeChart(); // Initialize if it wasn't already
+            }
+            startButton.disabled = false; // Re-enable button
+        }
+
+        startButton.addEventListener('click', () => {
+            resetUI(); // Clear previous results and reset UI elements
+
+            const dietType = document.getElementById('diet_type').value;
+            const numFoods = parseInt(document.getElementById('num_foods').value);
+            const generations = parseInt(document.getElementById('generations').value);
+            const populationSize = parseInt(document.getElementById('population_size').value);
+
+            // Basic validation
+            if (isNaN(numFoods) || numFoods < 10 || numFoods > 100 ||
+                isNaN(generations) || generations < 10 || generations > 1000 ||
+                isNaN(populationSize) || populationSize < 10 || populationSize > 200) {
+                statusDiv.textContent = 'Error: Please enter valid parameters.';
+                statusDiv.className = 'error-message';
+                return;
+            }
+
+            statusDiv.textContent = 'Sending request to server...';
+            startButton.disabled = true; // Disable button during optimization
+
+            // Emit event to server
+            socket.emit('start_optimization', {
+                diet_type: dietType,
+                num_foods: numFoods,
+                generations: generations,
+                population_size: populationSize
+            });
+        });
+
+        // --- SocketIO Event Listeners ---
+
+        socket.on('connect', () => {
+            console.log('Connected to server via Socket.IO');
+            statusDiv.textContent = 'Connected. Ready to start optimization.';
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            statusDiv.textContent = 'Disconnected from server. Please refresh.';
+            statusDiv.className = 'error-message';
+            startButton.disabled = true;
+        });
+
+        socket.on('status_update', (data) => {
+            console.log('Status:', data.message);
+            statusDiv.textContent = data.message;
+            statusDiv.className = ''; // Reset error class if any
+        });
+
+        socket.on('generation_update', (data) => {
+            const generation = data.generation;
+            const score = data.score;
+            const totalGenerations = data.total_generations;
+
+             // Update progress bar
+             const progressPercent = totalGenerations > 0 ? Math.round((generation / totalGenerations) * 100) : 0;
+             progressContainer.style.display = 'block'; // Show progress bar
+             progressBar.style.width = progressPercent + '%';
+             progressBar.textContent = `${progressPercent}% (Gen ${generation}/${totalGenerations})`;
+
+
+            statusDiv.textContent = `Optimizing... Generation ${generation}/${totalGenerations}, Best Score: ${score.toFixed(3)}`;
+
+            // Update chart
+            chartData.labels.push(generation);
+            chartData.datasets[0].data.push(score);
+            // Limit history points for performance? Maybe later.
+             if (chartData.labels.length > 500) { // Limit display points
+                 chartData.labels.shift();
+                 chartData.datasets[0].data.shift();
+             }
+
+            if (scoreChart) {
+                scoreChart.update();
+            } else {
+                initializeChart(); // Initialize if it's the first update
+            }
+        });
+
+        socket.on('optimization_complete', (data) => {
+            console.log('Optimization Complete:', data);
+            statusDiv.textContent = `Optimization Complete! Final Score: ${parseFloat(data.message.split(': ')[1]).toFixed(3)}`;
+             statusDiv.className = ''; // Clear any error state
+            progressBar.style.width = '100%'; // Ensure bar is full
+            progressBar.textContent = 'Completed';
+
+
+            // Display link to the report
+            resultsDiv.innerHTML = `
+                <p><strong>Run Number: ${data.run_number}</strong></p>
+                <p>Report generated:</p>
+                <ul>
+                    <li><a href="/recipes/html/${data.report_html}" target="_blank">View HTML Report (${data.report_html})</a></li>
+                    <!-- Add link to JSON if needed -->
+                    <!-- <li><a href="/recipes/json/${data.report_json}" target="_blank">View JSON Data</a></li> -->
+                </ul>
+                <p><a href="#" onclick="resetUI(); return false;">Start New Optimization</a></p>
+            `;
+            startButton.disabled = false; // Re-enable button
+        });
+
+        socket.on('optimization_error', (data) => {
+            console.error('Optimization Error:', data.message);
+            statusDiv.textContent = `Error: ${data.message}`;
+            statusDiv.className = 'error-message';
+            progressContainer.style.display = 'none'; // Hide progress bar on error
+            startButton.disabled = false; // Re-enable button
+        });
+
+        // Initialize chart on page load
+        window.onload = initializeChart;
+
+    </script>
+</body>
+</html>
