@@ -6,6 +6,10 @@ The application can be run either as a Command Line Interface (CLI) tool or as a
 
 ![](screenshot.png)
 
+This script is running on a schedule and you can view the recipe leader board, recipes with the best scores (lowest score is best) here :
+
+<https://alexlaverty.github.io/optimize-nutrition/>
+
 ## Features
 
 *   **Nutritional Optimization:** Employs a Genetic Algorithm to find optimal food combinations and amounts.
