@@ -1,8 +1,5 @@
 # Genetic Algorithm Nutrition Optimizer
 
-[![GitHub Banner](https://github.blog/wp-content/uploads/2008/12/forkme_right_darkblue_121621.png?resize=149%2C149)](https://github.com/alexlaverty/optimize-nutrition)
-*(Replace the link above with the actual link to your GitHub repository if you have one)*
-
 This project uses a Genetic Algorithm (GA) to optimize meal plans based on nutritional data from an Excel spreadsheet. The goal is to find combinations and quantities of foods that best meet Recommended Daily Intake (RDI) targets for various nutrients, while considering optional dietary restrictions (like vegan or WFPB).
 
 The application can be run either as a Command Line Interface (CLI) tool or as an interactive Web User Interface (Web UI) built with Flask and SocketIO.
