@@ -19,7 +19,7 @@ The application can be run either as a Command Line Interface (CLI) tool or as a
     *   Live updates on the best score achieved per generation.
     *   A real-time line chart showing the score progression over generations.
     *   A table showing the amounts (in grams) of each food in the best solution of the current generation, updated live.
-*   **Data Source:** Reads nutritional information from "Release 2 - Nutrient file.xlsx".
+*   **Data Source:** Reads nutritional information from the Australian Food Composition Nutrient Database "Release 2 - Nutrient file.xlsx".
 *   **Configurable RDI:** RDI targets, Upper Limits (UL), units, and nutrient properties (e.g., water/fat-soluble) are defined in `rdi/rdi.json`.
 *   **Detailed Reporting:** Generates comprehensive JSON and user-friendly HTML reports for each successful optimization run, saved in the `recipes/` directory.
 *   **History Tracking:** Logs key metrics for each generation across runs in `optimization_history.csv`.
