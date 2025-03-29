@@ -262,6 +262,8 @@ def optimize_nutrition(food_df,
     best_overall_score = evaluate_solution(best_overall_solution)
     history_data = [] # Collect history for CSV saving
 
+    daily_rdi_for_profile = {str(k): float(v) for k, v in valid_rdi_targets.items()}
+
     for generation in range(generations):
         # Evaluate population
         scores = []
@@ -303,18 +305,27 @@ def optimize_nutrition(food_df,
 
         # Emit progress to the specific web client, if applicable
         if socketio_instance and sid:
-            # *** MODIFIED: Include food amounts in the update ***
+            # *** NEW: Calculate nutrient profile for the current best solution ***
+            nutrient_details = calculate_nutrient_profile(
+                current_best_solution,
+                available_foods,
+                daily_rdi_for_profile, # Use the calculated daily RDI
+                meal_rdi_targets,      # Use the existing meal RDI
+                nutrient_mapping
+            )
+
             # Ensure amounts are standard floats and rounded for display
             food_amounts_update = {
-                food: round(float(amount), 1) # Round to 1 decimal place
+                food: round(float(amount), 1)
                 for food, amount in current_best_solution.items()
             }
 
             socketio_instance.emit('generation_update', {
                 'generation': generation + 1,
-                'score': float(current_best_score), # Send as float
+                'score': float(current_best_score),
                 'total_generations': generations,
-                'food_amounts': food_amounts_update # <-- Send current best amounts
+                'food_amounts': food_amounts_update,
+                'nutrient_details': nutrient_details # <-- Send the detailed profile
             }, room=sid)
             # Give the server a tiny break to handle IO
             socketio.sleep(0.01)
@@ -1424,6 +1435,89 @@ def handle_start_optimization(data):
         logging.error(f"Run #{current_run_number}: Failed to start background task: {e}")
         emit('optimization_error', {'message': 'Server error: Could not start optimization task.'}, room=sid)
 
+def calculate_nutrient_profile(solution, food_data_dict, daily_rdi, meal_rdi, nutrient_mapping):
+    """
+    Calculates the detailed nutrient profile for a given food solution.
+
+    Args:
+        solution (dict): Dictionary of {food_name: amount_g}.
+        food_data_dict (dict): Dictionary mapping food names to their nutrient data.
+        daily_rdi (dict): Dictionary of daily RDI targets {nutrient: value}.
+        meal_rdi (dict): Dictionary of meal RDI targets {nutrient: value}.
+        nutrient_mapping (dict): Dictionary mapping nutrients to details (unit, etc.).
+
+    Returns:
+        dict: A dictionary where keys are nutrient names and values are dicts
+              containing 'amount_raw', 'amount_str', 'meal_percentage',
+              'daily_percentage', and 'status'. Returns empty dict on error.
+    """
+    if not all([solution, food_data_dict, daily_rdi, meal_rdi, nutrient_mapping]):
+        logging.warning("Missing data for calculate_nutrient_profile")
+        return {}
+
+    final_nutrients = {nutrient: 0.0 for nutrient in meal_rdi} # Use floats
+
+    try:
+        for food, amount in solution.items():
+            food_str = str(food) # Ensure string key
+            amount_float = float(amount) # Ensure float value
+            if food_str not in food_data_dict or amount_float <= 0.01: continue # Skip if not in data or negligible
+
+            safe_amount = max(0.0, amount_float)
+            food_details = food_data_dict.get(food_str)
+            if not food_details:
+                logging.warning(f"Food details not found for '{food_str}' in profile calculation.")
+                continue
+
+            density = food_details.get('density', 100.0)
+            if density <= 0: density = 100.0
+
+            for nutrient in meal_rdi: # Iterate through target nutrients
+                nutrient_str = str(nutrient) # Ensure string key
+                nutrient_val = food_details.get(nutrient_str, 0.0) # Get value, default 0
+                nutrient_per_gram = nutrient_val / density
+                final_nutrients[nutrient_str] += nutrient_per_gram * safe_amount
+
+        # --- Build Profile Dictionary ---
+        profile = {}
+        for nutrient, amount in final_nutrients.items():
+            nutrient_str = str(nutrient) # Ensure string
+            if nutrient_str not in meal_rdi or nutrient_str not in daily_rdi: continue # Skip if not a target nutrient
+
+            meal_target = meal_rdi.get(nutrient_str)
+            daily_target = daily_rdi.get(nutrient_str)
+            unit = _get_unit(nutrient_str, nutrient_mapping)
+
+            # Ensure targets are valid before calculating percentages
+            meal_percentage_val = 0.0
+            if meal_target is not None and meal_target > 0:
+                meal_percentage_val = (amount / meal_target) * 100
+
+            daily_percentage_val = 0.0
+            if daily_target is not None and daily_target > 0:
+                daily_percentage_val = (amount / daily_target) * 100
+
+            status = "OK"
+            if meal_percentage_val < 85:
+                status = "LOW"
+            elif meal_percentage_val > 150:
+                status = "HIGH"
+
+            profile[nutrient_str] = {
+                "amount_raw": float(f"{amount:.1f}"),
+                "amount_str": f"{amount:.1f}{unit}",
+                "meal_percentage": f"{meal_percentage_val:.1f}%",
+                "daily_percentage": f"{daily_percentage_val:.1f}%",
+                "status": status
+            }
+
+        # Sort alphabetically by nutrient name for consistent display
+        sorted_profile = dict(sorted(profile.items()))
+        return sorted_profile
+
+    except Exception as e:
+        logging.error(f"Error calculating nutrient profile: {e}")
+        return {} # Return empty on error
 
 # --- Main Execution Block ---
 

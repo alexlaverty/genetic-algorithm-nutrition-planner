@@ -8,10 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
-        .container { display: flex; flex-direction: column; max-width: 1200px; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 20px; }
+        .container { display: flex; flex-direction: column; max-width: 1400px; /* Increased max-width for more space */ margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); gap: 20px; }
         .main-content { display: flex; flex-direction: row; gap: 20px; }
-        .controls-area { flex: 1; min-width: 250px; max-width: 350px; } /* Fixed width for controls */
-        .results-area { flex: 3; display: flex; flex-direction: column; gap: 15px; } /* Flexible width for results */
+        .controls-area { flex: 1; min-width: 250px; max-width: 300px; /* Slightly reduced max-width */ }
+        .results-area { flex: 3; display: flex; flex-direction: column; gap: 15px; overflow: hidden; /* Prevent results area from causing overall scroll */ }
 
         h1 { color: #0056b3; text-align: center; margin-bottom: 20px; margin-top: 0; }
         h2 { color: #0056b3; margin-top: 0; margin-bottom: 10px; font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
@@ -23,7 +23,7 @@
         button:hover { background-color: #218838; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
 
-        #status { padding: 10px; background-color: #e9ecef; border-radius: 4px; border-left: 5px solid #0056b3; min-height: 30px; font-size: 0.9em; }
+        #status { padding: 10px; background-color: #e9ecef; border-radius: 4px; border-left: 5px solid #0056b3; min-height: 30px; font-size: 0.9em; word-wrap: break-word; /* Wrap long status messages */ }
         .error-message { border-left-color: #dc3545; color: #721c24; background-color: #f8d7da; }
 
         .progress-container { width: 100%; background-color: #eee; border-radius: 4px; margin-top: 5px; display: none; /* Initially hidden */ height: 18px; }
@@ -31,46 +31,49 @@
 
 
         #chart-container {
-            margin-top: 10px;
-            /* min-height: 250px; */ /* Keep min-height if you want, but add max-height or height */
-            height: 300px; /* <<< Give it a fixed height */
-            /* OR use max-height: */
-            /* max-height: 400px; */ /* <<< Limit its maximum height */
-            position: relative; /* <<< Important for Chart.js responsiveness */
-            width: 100%; /* Ensure it takes available width */
+            height: 280px; /* Adjusted height slightly */
+            position: relative;
+            width: 100%;
+            margin-top: 10px; /* Add margin if needed */
         }
+        #chart-container canvas { max-width: 100%; max-height: 100%; }
 
-        /* Optional: Ensure canvas itself doesn't exceed container */
-        #chart-container canvas {
-            max-width: 100%;
-            max-height: 100%;
-        }
-
-        /* Adjust results area layout if needed */
-        .results-area {
-            flex: 3;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            /* Add this if container height causes overflow issues */
-            /* overflow: hidden; */
-        }
-         #foodAmountsContainer { margin-top: 10px; max-height: 400px; overflow-y: auto; border: 1px solid #eee; padding: 10px; background-color: #fdfdfd;}
+        #foodAmountsContainer { margin-top: 10px; overflow-y: auto; border: 1px solid #eee; padding: 10px; background-color: #fdfdfd;}
         #foodAmountsTable { width: 100%; border-collapse: collapse; font-size: 0.9em; }
         #foodAmountsTable th, #foodAmountsTable td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
-        #foodAmountsTable th { background-color: #f2f2f2; position: sticky; top: 0; z-index: 1;} /* Sticky header */
-        #foodAmountsTable td:nth-child(2) { text-align: right; font-weight: bold; min-width: 60px;} /* Right align amount */
+        #foodAmountsTable th { background-color: #f2f2f2; position: sticky; top: 0; z-index: 1;}
+        #foodAmountsTable td:nth-child(2) { text-align: right; font-weight: bold; min-width: 60px;}
+
+        /* --- Nutrient Table Styling --- */
+        #nutrientTableContainer { margin-top: 15px; border: 1px solid #eee; background-color: #fdfdfd; padding: 10px;}
+        #nutrientTable { border-collapse: collapse; width: 100%; font-size: 0.85em; /* Slightly smaller font */ }
+        #nutrientTable thead th { background-color: #e9ecef; font-weight: bold; padding: 8px 10px; text-align: left; position: sticky; top: 0; z-index: 1; border: 1px solid #ddd; }
+        #nutrientTable tbody td { padding: 6px 10px; text-align: left; border: 1px solid #ddd; word-wrap: break-word; }
+        #nutrientTable tbody { display: block;  /* Scroll limit */ overflow-y: auto; width: 100%; }
+        #nutrientTable thead, #nutrientTable tbody tr { display: table; width: 100%; table-layout: fixed; } /* Fixed layout for alignment */
+        #nutrientTable tbody tr:nth-child(even) { background-color: #f8f9fa; }
+
+        .status-low { color: #dc3545; font-weight: bold; }
+        .status-ok { color: #28a745; }
+        .status-high { color: #ffc107; font-weight: bold; }
+        /* --- End Nutrient Table Styling --- */
+
 
         #results { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.95em; }
         #results a { color: #0056b3; text-decoration: none; }
         #results a:hover { text-decoration: underline; }
 
         /* Responsive Adjustments */
-         @media (max-width: 768px) {
-            .container { flex-direction: column; }
+         @media (max-width: 992px) { /* Adjust breakpoint */
+            .container { flex-direction: column; max-width: 95%; }
             .main-content { flex-direction: column; }
             .controls-area { max-width: 100%; }
-            #foodAmountsContainer { max-height: 300px; }
+            #foodAmountsContainer { max-height: 200px; }
+            #nutrientTable tbody { max-height: 300px; } /* Adjust scroll height */
+        }
+         @media (max-width: 576px) {
+             #nutrientTable { font-size: 0.8em; } /* Even smaller font on very small screens */
+             #nutrientTable thead th, #nutrientTable tbody td { padding: 4px 6px; }
         }
     </style>
 </head>
@@ -115,7 +118,15 @@
             </div>
 
             <div class="results-area">
-                <div id="foodAmountsContainer" style="display: none;">  <!-- Initially hidden -->
+
+                <!-- Existing Chart -->
+                <div id="chart-container">
+                    <h2>Score History</h2>
+                    <canvas id="scoreChart"></canvas>
+                </div>
+
+                <!-- Existing Food Amounts Table -->
+                <div id="foodAmountsContainer" style="display: none;">
                     <h2>Real-time Food Amounts (Best Solution)</h2>
                     <table id="foodAmountsTable">
                         <thead>
@@ -124,16 +135,32 @@
                                 <th>Amount (g)</th>
                             </tr>
                         </thead>
-                        <tbody id="foodAmountsTbody">
-                            <!-- Rows will be added here by JavaScript -->
-                        </tbody>
+                        <tbody id="foodAmountsTbody"></tbody>
                     </table>
                 </div>
 
-                <div id="chart-container">
-                     <h2>Score History</h2>
-                    <canvas id="scoreChart"></canvas>
-                </div>
+
+
+                <!-- *** NEW: Nutrient Profile Table *** -->
+                <div id="nutrientTableContainer" style="display: none;">
+                     <h2>Nutrient Profile (Current Best)</h2>
+                     <table id="nutrientTable">
+                         <thead>
+                             <tr>
+                                 <th>Nutrient</th>
+                                 <th>Amount</th>
+                                 <th>% Meal Target</th>
+                                 <th>% Daily RDI</th>
+                                 <th>Status</th>
+                             </tr>
+                         </thead>
+                         <tbody id="nutrientTableBody">
+                             <!-- Rows will be added dynamically here -->
+                         </tbody>
+                     </table>
+                 </div>
+                 <!-- *** End Nutrient Profile Table *** -->
+
             </div>
         </div>
     </div>
@@ -141,6 +168,7 @@
     <script>
         const socket = io(); // Connects to the server that served the page
 
+        // --- DOM References ---
         const startButton = document.getElementById('startButton');
         const statusDiv = document.getElementById('status');
         const resultsDiv = document.getElementById('results');
@@ -148,85 +176,77 @@
         const progressContainer = document.getElementById('progressContainer');
         const foodAmountsContainer = document.getElementById('foodAmountsContainer');
         const foodAmountsTbody = document.getElementById('foodAmountsTbody');
+        // *** NEW ***
+        const nutrientTableContainer = document.getElementById('nutrientTableContainer');
+        const nutrientTableBody = document.getElementById('nutrientTableBody');
 
-        let scoreChart = null; // Chart instance
+
+        // --- Chart Variables ---
+        let scoreChart = null;
         let chartData = {
             labels: [],
             datasets: [{
                 label: 'Best Score per Generation',
                 data: [],
                 borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.1)', // Optional fill
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
                 tension: 0.1,
-                fill: true, // Enable fill
-                pointRadius: 1, // Smaller points
-                borderWidth: 1.5 // Slightly thicker line
+                fill: true,
+                pointRadius: 1,
+                borderWidth: 1.5
             }]
         };
-        let foodAmountElements = {}; // Store references to amount cells {foodName: tdElement}
+        let foodAmountElements = {}; // {foodName: tdElement}
 
+        // --- Functions ---
         function initializeChart() {
             const ctx = document.getElementById('scoreChart').getContext('2d');
              if (scoreChart) {
-                 scoreChart.destroy(); // Destroy previous chart instance if exists
+                 scoreChart.destroy();
              }
             scoreChart = new Chart(ctx, {
-                type: 'line',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false, // Allow chart to resize vertically
-                    scales: {
-                        y: {
-                            beginAtZero: false, // Start near actual data
-                            title: { display: true, text: 'Score (Lower is Better)' }
-                        },
-                        x: {
-                             title: { display: true, text: 'Generation' }
-                        }
-                    },
-                    animation: { duration: 0 }, // Disable animation for faster updates
-                    plugins: {
-                        legend: { display: false } // Hide legend if not needed
-                    }
-                }
-            });
+                type: 'line', data: chartData, options: {
+                    responsive: true, maintainAspectRatio: false, scales: {
+                        y: { beginAtZero: false, title: { display: true, text: 'Score (Lower is Better)' } },
+                        x: { title: { display: true, text: 'Generation' } } },
+                    animation: { duration: 0 }, plugins: { legend: { display: false } } } });
         }
 
         function resetUI() {
             statusDiv.textContent = 'Awaiting optimization start...';
-            statusDiv.className = ''; // Reset class
+            statusDiv.className = '';
             resultsDiv.innerHTML = '';
             progressContainer.style.display = 'none';
             progressBar.style.width = '0%';
             progressBar.textContent = '0%';
 
-            // Reset chart data
+            // Reset chart
             chartData.labels = [];
             chartData.datasets[0].data = [];
-            if (scoreChart) {
-                scoreChart.update(); // Update chart with empty data
-            } else {
-                 initializeChart(); // Initialize if it wasn't already
-            }
+            if (scoreChart) scoreChart.update();
+            else initializeChart();
 
-             // Reset food amounts table
-            foodAmountsTbody.innerHTML = ''; // Clear table body
-            foodAmountsContainer.style.display = 'none'; // Hide container
-            foodAmountElements = {}; // Clear stored elements
+            // Reset food amounts table
+            foodAmountsTbody.innerHTML = '';
+            foodAmountsContainer.style.display = 'none';
+            foodAmountElements = {};
 
-            startButton.disabled = false; // Re-enable button
+            // *** NEW: Reset nutrient table ***
+            nutrientTableBody.innerHTML = '';
+            nutrientTableContainer.style.display = 'none';
+
+            startButton.disabled = false;
         }
 
+        // --- Event Listeners ---
         startButton.addEventListener('click', () => {
-            resetUI(); // Clear previous results and reset UI elements
+            resetUI();
 
             const dietType = document.getElementById('diet_type').value;
             const numFoods = parseInt(document.getElementById('num_foods').value);
             const generations = parseInt(document.getElementById('generations').value);
             const populationSize = parseInt(document.getElementById('population_size').value);
 
-            // Basic validation
             if (isNaN(numFoods) || numFoods < 1 || numFoods > 150 ||
                 isNaN(generations) || generations < 10 || generations > 2000 ||
                 isNaN(populationSize) || populationSize < 10 || populationSize > 500) {
@@ -236,68 +256,47 @@
             }
 
             statusDiv.textContent = 'Sending request to server...';
-            startButton.disabled = true; // Disable button during optimization
+            startButton.disabled = true;
 
-            socket.emit('start_optimization', {
-                diet_type: dietType,
-                num_foods: numFoods,
-                generations: generations,
-                population_size: populationSize
-            });
+            socket.emit('start_optimization', { diet_type: dietType, num_foods: numFoods, generations: generations, population_size: populationSize });
         });
 
-        // --- SocketIO Event Listeners ---
+        // --- SocketIO Event Handlers ---
 
         socket.on('connect', () => {
-            console.log('Connected to server via Socket.IO');
-            if (!startButton.disabled) { // Only update if not already running
-                statusDiv.textContent = 'Connected. Ready to start optimization.';
-                 statusDiv.className = ''; // Reset class
-            }
+            console.log('Connected');
+            if (!startButton.disabled) { statusDiv.textContent = 'Connected. Ready.'; statusDiv.className = ''; }
         });
 
         socket.on('disconnect', () => {
-            console.log('Disconnected from server');
-            statusDiv.textContent = 'Disconnected from server. Please refresh.';
-            statusDiv.className = 'error-message';
-            startButton.disabled = true;
+            console.log('Disconnected');
+            statusDiv.textContent = 'Disconnected. Please refresh.'; statusDiv.className = 'error-message'; startButton.disabled = true;
         });
 
         socket.on('status_update', (data) => {
             console.log('Status:', data.message);
-            // Avoid overwriting critical error/completion messages
             if (!statusDiv.textContent.startsWith("Error:") && !statusDiv.textContent.startsWith("Optimization Complete!")) {
-                 statusDiv.textContent = data.message;
-                 statusDiv.className = ''; // Reset error class if any
+                 statusDiv.textContent = data.message; statusDiv.className = '';
             }
         });
 
-        // *** NEW: Handle initial food list ***
         socket.on('initial_foods', (data) => {
-            console.log('Received initial foods:', data.foods);
-            foodAmountsTbody.innerHTML = ''; // Clear previous table content
-            foodAmountElements = {}; // Reset references
-            const foods = data.foods || []; // Handle case where list might be missing
+            console.log('Initial foods:', data.foods);
+            foodAmountsTbody.innerHTML = '';
+            foodAmountElements = {};
+            const foods = data.foods || [];
 
-            if (foods.length === 0) {
-                foodAmountsContainer.style.display = 'none'; // Hide if no foods
-                return;
-            }
+            if (foods.length === 0) { foodAmountsContainer.style.display = 'none'; return; }
 
             foods.forEach(foodName => {
                 const row = foodAmountsTbody.insertRow();
                 const cellName = row.insertCell();
                 const cellAmount = row.insertCell();
-
                 cellName.textContent = foodName;
-                cellAmount.textContent = '0.0g'; // Initial amount
-                cellAmount.style.textAlign = 'right'; // Ensure right alignment
-                cellAmount.style.fontWeight = 'bold';
-
-                // Store reference to the amount cell for quick updates
+                cellAmount.textContent = '0.0g'; cellAmount.style.textAlign = 'right'; cellAmount.style.fontWeight = 'bold';
                 foodAmountElements[foodName] = cellAmount;
             });
-            foodAmountsContainer.style.display = 'block'; // Show the table container
+            foodAmountsContainer.style.display = 'block';
         });
 
 
@@ -305,74 +304,94 @@
             const generation = data.generation;
             const score = data.score;
             const totalGenerations = data.total_generations;
-            const foodAmounts = data.food_amounts || {}; // Get food amounts from payload
+            const foodAmounts = data.food_amounts || {};
+            // *** NEW: Get nutrient details ***
+            const nutrientDetails = data.nutrient_details || {};
 
             // Update progress bar
             const progressPercent = totalGenerations > 0 ? Math.round((generation / totalGenerations) * 100) : 0;
-            progressContainer.style.display = 'block'; // Show progress bar
+            progressContainer.style.display = 'block';
             progressBar.style.width = progressPercent + '%';
-            progressBar.textContent = `${progressPercent}%`; // Keep it concise
+            progressBar.textContent = `${progressPercent}%`;
 
-            // Update status message
+            // Update status
             statusDiv.textContent = `Gen ${generation}/${totalGenerations} | Score: ${score.toFixed(3)}`;
 
             // Update chart
             chartData.labels.push(generation);
             chartData.datasets[0].data.push(score);
-
-            // Limit chart history points for performance after many generations
             const maxChartPoints = 500;
             if (chartData.labels.length > maxChartPoints) {
-                chartData.labels = chartData.labels.slice(-maxChartPoints);
-                chartData.datasets[0].data = chartData.datasets[0].data.slice(-maxChartPoints);
+                chartData.labels.shift(); chartData.datasets[0].data.shift();
             }
+            if (scoreChart) scoreChart.update();
+            else initializeChart();
 
-            if (scoreChart) {
-                scoreChart.update(); // Use default animation or set duration=0 in options
-            } else {
-                initializeChart();
-            }
-
-            // *** NEW: Update food amounts table ***
-            // Iterate through the stored cell references
+            // Update food amounts table
             for (const foodName in foodAmountElements) {
                 const amountCell = foodAmountElements[foodName];
-                // Get the amount from the received data, default to 0 if missing
                 const newAmount = foodAmounts[foodName] !== undefined ? foodAmounts[foodName] : 0;
                 amountCell.textContent = `${newAmount.toFixed(1)}g`;
             }
+
+            // *** NEW: Update Nutrient Table ***
+            nutrientTableBody.innerHTML = ''; // Clear previous rows
+            if (Object.keys(nutrientDetails).length > 0) {
+                Object.entries(nutrientDetails).forEach(([nutrient, details]) => {
+                    const row = nutrientTableBody.insertRow();
+
+                    const cellNutrient = row.insertCell();
+                    const cellAmount = row.insertCell();
+                    const cellMealPerc = row.insertCell();
+                    const cellDailyPerc = row.insertCell();
+                    const cellStatus = row.insertCell();
+
+                    cellNutrient.textContent = nutrient;
+                    cellAmount.textContent = details.amount_str || 'N/A';
+                    cellMealPerc.textContent = details.meal_percentage || 'N/A';
+                    cellDailyPerc.textContent = details.daily_percentage || 'N/A';
+                    cellStatus.textContent = details.status || 'N/A';
+
+                    // Apply status class for styling
+                    if (details.status) {
+                        cellStatus.className = `status-${details.status.toLowerCase()}`;
+                    }
+                });
+                 nutrientTableContainer.style.display = 'block'; // Show the table container
+            } else {
+                 nutrientTableContainer.style.display = 'none'; // Hide table if no data
+            }
+            // *** End Nutrient Table Update ***
         });
 
         socket.on('optimization_complete', (data) => {
-            console.log('Optimization Complete:', data);
+            console.log('Complete:', data);
             statusDiv.textContent = data.message || `Optimization Complete! Final Score available in report.`;
-            statusDiv.className = ''; // Clear any error state
+            statusDiv.className = '';
             progressBar.style.width = '100%';
             progressBar.textContent = 'Completed';
 
-            // Display link to the report
-            let reportLinks = '<p><strong>Run Number: ' + (data.run_number || 'N/A') + '</strong></p>';
+            let reportLinks = '<p><strong>Run Number: ' + (data.run_number || 'N/A') + '</strong></p><ul>'; // Start unordered list
             if (data.report_html) {
-                // Use relative path for link within the Flask app
                 reportLinks += `<li><a href="/recipes/html/${data.report_html}" target="_blank">View HTML Report (${data.report_html})</a></li>`;
             } else {
                  reportLinks += '<li>HTML Report generation failed or path unavailable.</li>';
             }
-             if (data.report_json) {
-                 // Example if you want to add JSON link later
-                 // reportLinks += `<li><a href="/recipes/json/${data.report_json}" target="_blank">View JSON Data</a></li>`;
-             }
-            resultsDiv.innerHTML = `<ul>${reportLinks}</ul><p><a href="#" onclick="resetUI(); return false;">Start New Optimization</a></p>`;
-            startButton.disabled = false; // Re-enable button
+             // Close unordered list
+            reportLinks += '</ul><p><a href="#" onclick="resetUI(); return false;">Start New Optimization</a></p>';
+            resultsDiv.innerHTML = reportLinks;
+            startButton.disabled = false;
         });
 
         socket.on('optimization_error', (data) => {
-            console.error('Optimization Error:', data.message);
-            statusDiv.textContent = `Error: ${data.message || 'Unknown error during optimization.'}`;
+            console.error('Error:', data.message);
+            statusDiv.textContent = `Error: ${data.message || 'Unknown error.'}`;
             statusDiv.className = 'error-message';
-            progressContainer.style.display = 'none'; // Hide progress bar on error
-            foodAmountsContainer.style.display = 'none'; // Hide food table on error
-            startButton.disabled = false; // Re-enable button
+            progressContainer.style.display = 'none';
+            foodAmountsContainer.style.display = 'none';
+            // *** NEW: Hide nutrient table on error ***
+            nutrientTableContainer.style.display = 'none';
+            startButton.disabled = false;
         });
 
         // Initialize chart on page load
