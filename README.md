@@ -1,127 +1,256 @@
-# Genetic Algorithm Nutrition Optimizer
+# Genetic Algorithm Optimised Nutrition Recipes
 
-This project uses a Genetic Algorithm (GA) to optimize meal plans based on nutritional data from the [Australian Food Composition Database Nutrient Excel spreadsheet](https://www.foodstandards.gov.au/science-data/monitoringnutrients/afcd/australian-food-composition-database-download-excel-files#nutrient). The goal is to find combinations and quantities of foods that best meet Recommended Daily Intake (RDI) targets for various nutrients, while considering optional dietary restrictions (like vegan or WFPB).
+Generated on: 2025-03-29 03:20:21
 
-The application can be run either as a Command Line Interface (CLI) tool or as an interactive Web User Interface (Web UI) built with Flask and SocketIO.
-
-![](screenshot.png)
-
-This script is running on a schedule and you can view the recipe leader board, recipes with the best scores (lowest score is best) here :
-
-<https://alexlaverty.github.io/optimize-nutrition/>
-
-## Features
-
-*   **Nutritional Optimization:** Employs a Genetic Algorithm to find optimal food combinations and amounts.
-*   **RDI Targeting:** Aims to meet configurable RDI values for a wide range of nutrients.
-*   **Customizable Diets:** Supports filtering foods based on diet types (e.g., `all`, `vegan`, `wfpb`, `nutrient_dense`) defined in JSON configuration files.
-*   **Dual Interface:**
-    *   **CLI Mode:** Run optimizations directly from the command line.
-    *   **Web UI Mode:** Provides an interactive web interface using Flask, allowing users to set parameters, start optimizations, and view results in real-time.
-*   **Real-time Web Updates:** The Web UI displays:
-    *   The list of randomly selected foods for the current optimization.
-    *   Live updates on the best score achieved per generation.
-    *   A real-time line chart showing the score progression over generations.
-    *   A table showing the amounts (in grams) of each food in the best solution of the current generation, updated live.
-*   **Data Source:** Reads nutritional information from the Australian Food Composition Nutrient Database "Release 2 - Nutrient file.xlsx".
-*   **Configurable RDI:** RDI targets, Upper Limits (UL), units, and nutrient properties (e.g., water/fat-soluble) are defined in `rdi/rdi.json`.
-*   **Detailed Reporting:** Generates comprehensive JSON and user-friendly HTML reports for each successful optimization run, saved in the `recipes/` directory.
-*   **History Tracking:** Logs key metrics for each generation across runs in `optimization_history.csv`.
-*   **Automatic Indexing:** Creates/updates `recipes/html/index.html` providing a sortable overview and links to all generated HTML reports. Also generates this `README.md` file with an updated list (if run via CLI).
-*   **Recipe Cleanup:** Automatically removes older or poorly performing recipes based on score and quantity thresholds to manage storage.
-*   **Asynchronous Web Operations:** Uses `eventlet` and `Flask-SocketIO` for efficient handling of background optimization tasks and real-time communication in the Web UI.
-
-
-## Requirements
-
-*   Python 3.8+
-*   Required libraries: `Flask`, `Flask-SocketIO`, `eventlet`, `pandas`, `numpy`, `openpyxl`
-
-## Installation
-
-1.  **Clone the repository (if applicable):**
-    ```bash
-    git clone <your-repository-url>
-    cd <repository-directory>
-    ```
-2.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    # Or manually:
-    # pip install Flask Flask-SocketIO eventlet pandas numpy openpyxl
-    ```
-    *Note: `eventlet` is crucial for the asynchronous features of the Web UI.*
-
-## Usage
-
-### 1. Web UI Mode
-
-This mode provides an interactive browser interface.
-
-1.  **Start the server:**
-    ```bash
-    python app-web.py --webui
-    ```
-    *(Ensure `eventlet.monkey_patch()` runs correctly at the start of the script as indicated by console output).*
-2.  **Access the UI:** Open your web browser and navigate to `http://127.0.0.1:5000` (or `http://<your-server-ip>:5000` if running on a different machine/network interface).
-3.  **Interact:**
-    *   Select the desired **Diet Type**.
-    *   Choose the **Number of Foods** to randomly select for optimization.
-    *   Set the number of **Generations** and **Population Size** for the GA.
-    *   Click **"Start Optimization"**.
-    *   Observe the **Status** updates, **Progress Bar**, real-time **Score Chart**, and the **Real-time Food Amounts** table.
-    *   Once complete, links to the generated **HTML Report** will appear.
-
-### 2. Command Line Interface (CLI) Mode
-
-This mode runs optimizations directly in the terminal, useful for batch processing or scripting.
-
-1.  **Run a default optimization:** (Runs one optimization for each diet type defined in the script, using random parameters for food count and generations)
-    ```bash
-    python app-web.py
-    ```
-2.  **Run with specific parameters:** (Overrides the random generation/food counts for all diet types run in that session)
-    ```bash
-    python app-web.py --generations 200 --foods 30
-    ```
-3.  **Output:** The CLI mode will print progress updates, a summary report for each completed optimization to the console, save detailed JSON/HTML reports to the `recipes/` directory, update the history CSV, and regenerate the index files (`recipes/html/index.html` and `README.md`).
-
-## Configuration
-
-*   **Nutritional Data:** Ensure the `"Release 2 - Nutrient file.xlsx"` is present and the sheet name ("All solids & liquids per 100g") is correct in `_load_data`. Column names in the Excel file should match the keys used in `rdi.json`.
-*   **RDI Targets:** Modify `rdi/rdi.json`. Each key is the nutrient name (matching the Excel column header). The value is an object containing:
-    *   `rdi`: Recommended Daily Intake value.
-    *   `ul`: Tolerable Upper Intake Level (optional, used for penalties).
-    *   `unit`: Display unit (e.g., "mg", "g", "μg").
-    *   `water_soluble`, `fat_soluble`, `is_mineral`: Boolean flags (optional) used by the scoring function to apply different overage penalties.
-*   **Diet Types:** Add or modify JSON files in the `diets/` folder. Each file should be named `<diet_name>.json` (e.g., `vegan.json`). The structure is:
-    ```json
-    {
-      "included_terms": ["Plant-Based", "Tofu", ...], // Optional: Keep only foods containing these terms
-      "excluded_terms": ["Cheese", "Meat", "Honey", ...] // Optional: Remove foods containing these terms
-    }
-    ```
-    Terms are case-insensitive. Inclusion is applied before exclusion.
-
-## Output
-
-*   **JSON Reports (`recipes/json/`):** Detailed data for each meal plan, including run info, penalties, food quantities, and full nutrition profile. Filename format: `meal_<run_number>_<timestamp>.json`.
-*   **HTML Reports (`recipes/html/`):** User-friendly formatted reports viewable in a web browser. Filename format: `meal_<run_number>_<timestamp>.html`.
-*   **HTML Index (`recipes/html/index.html`):** A sortable table listing all generated HTML reports with key metrics.
-*   **README Index (`README.md`):** The "Generated Recipes Index" section below is automatically updated when the script is run in CLI mode.
-*   **History (`optimization_history.csv`):** CSV file logging the best score per generation for each run.
-
-## How it Works (Briefly)
-
-The script uses a Genetic Algorithm:
-
-1.  **Initialization:** A population of random potential meal plans (solutions) is created. Each solution consists of random amounts of the selected foods.
-2.  **Evaluation:** Each solution is evaluated based on how closely its calculated nutrient totals match the target RDI values for a single meal (scaled from the daily RDI). A score is calculated, penalizing deviations from the target (with different penalties for being under RDI, over RDI, over UL, and specific penalties for excess soluble vitamins). Lower scores are better.
-3.  **Selection:** Solutions with better (lower) scores are more likely to be selected as "parents" for the next generation. Elitism ensures the very best solutions are carried over directly.
-4.  **Crossover:** Pairs of parent solutions are combined (e.g., blending their food amounts) to create new "child" solutions, inheriting traits from both parents.
-5.  **Mutation:** A small random change is applied to some child solutions (e.g., slightly increasing or decreasing the amount of a random food) to introduce new variations and prevent premature convergence.
-6.  **Repeat:** The evaluation, selection, crossover, and mutation steps are repeated for a specified number of generations.
-7.  **Result:** The best solution (lowest score) found across all generations is presented as the optimized meal plan.
-
-
-
+| Run # | Diet | Score | Foods | Nutrients (OK/Low/High) | Generations | Time (s) | Filename |
+|-------|------|-------|-------|----------------------|------------|----------|----------|
+| 1114 | all | 2.21 | 27 | 25/3/6 | 187 | 1538.6 | [meal_1114_20250326_201939.json](recipes/html/meal_1114_20250326_201939.html) |
+| 742 | all | 2.36 | 20 | 23/3/8 | 98 | 613.4 | [meal_742_20250318_131927.json](recipes/html/meal_742_20250318_131927.html) |
+| 842 | all | 2.39 | 27 | 22/1/11 | 173 | 1416.8 | [meal_842_20250320_090942.json](recipes/html/meal_842_20250320_090942.html) |
+| 1034 | all | 2.47 | 27 | 23/4/7 | 232 | 1938.1 | [meal_1034_20250324_162318.json](recipes/html/meal_1034_20250324_162318.html) |
+| 1066 | all | 2.58 | 29 | 22/5/7 | 369 | 3260.7 | [meal_1066_20250325_141806.json](recipes/html/meal_1066_20250325_141806.html) |
+| 1118 | all | 2.60 | 21 | 24/2/8 | 315 | 1970.4 | [meal_1118_20250326_221622.json](recipes/html/meal_1118_20250326_221622.html) |
+| 1126 | all | 3.09 | 28 | 21/4/9 | 240 | 2014.2 | [meal_1126_20250327_025711.json](recipes/html/meal_1126_20250327_025711.html) |
+| 850 | all | 3.54 | 29 | 20/5/9 | 218 | 1908.6 | [meal_850_20250320_121701.json](recipes/html/meal_850_20250320_121701.html) |
+| 1178 | all | 3.59 | 24 | 23/4/7 | 64 | 467.6 | [meal_1178_20250328_123436.json](recipes/html/meal_1178_20250328_123436.html) |
+| 1099 | vegan | 3.74 | 29 | 19/6/9 | 300 | 3593.2 | [meal_1099_20250326_101905.json](recipes/html/meal_1099_20250326_101905.html) |
+| 798 | all | 3.78 | 30 | 23/4/7 | 145 | 1356.5 | [meal_798_20250319_110742.json](recipes/html/meal_798_20250319_110742.html) |
+| 1015 | vegan | 3.86 | 25 | 24/4/6 | 347 | 3426.0 | [meal_1015_20250324_062600.json](recipes/html/meal_1015_20250324_062600.html) |
+| 910 | all | 3.91 | 28 | 27/3/4 | 279 | 2381.6 | [meal_910_20250321_221626.json](recipes/html/meal_910_20250321_221626.html) |
+| 794 | all | 3.95 | 25 | 19/7/8 | 172 | 1329.4 | [meal_794_20250319_091002.json](recipes/html/meal_794_20250319_091002.html) |
+| 1038 | all | 4.00 | 30 | 21/5/8 | 220 | 2009.0 | [meal_1038_20250324_201752.json](recipes/html/meal_1038_20250324_201752.html) |
+| 1102 | all | 4.00 | 27 | 22/6/6 | 359 | 2893.8 | [meal_1102_20250326_123523.json](recipes/html/meal_1102_20250326_123523.html) |
+| 906 | all | 4.06 | 27 | 22/5/7 | 239 | 1953.1 | [meal_906_20250321_201852.json](recipes/html/meal_906_20250321_201852.html) |
+| 1150 | all | 4.07 | 12 | 21/7/6 | 140 | 511.9 | [meal_1150_20250327_182434.json](recipes/html/meal_1150_20250327_182434.html) |
+| 939 | vegan | 4.13 | 27 | 23/4/7 | 195 | 2560.0 | [meal_939_20250322_141557.json](recipes/html/meal_939_20250322_141557.html) |
+| 810 | all | 4.14 | 29 | 24/4/6 | 202 | 1833.0 | [meal_810_20250319_161116.json](recipes/html/meal_810_20250319_161116.html) |
+| 1186 | all | 4.16 | 19 | 23/4/7 | 304 | 1796.2 | [meal_1186_20250328_162148.json](recipes/html/meal_1186_20250328_162148.html) |
+| 854 | all | 4.18 | 28 | 23/4/7 | 288 | 2449.5 | [meal_854_20250320_140923.json](recipes/html/meal_854_20250320_140923.html) |
+| 1002 | all | 4.22 | 22 | 21/6/7 | 286 | 1910.1 | [meal_1002_20250323_221651.json](recipes/html/meal_1002_20250323_221651.html) |
+| 930 | all | 4.30 | 28 | 22/5/7 | 62 | 527.1 | [meal_930_20250322_101745.json](recipes/html/meal_930_20250322_101745.html) |
+| 922 | all | 4.35 | 27 | 26/5/3 | 304 | 2499.1 | [meal_922_20250322_062228.json](recipes/html/meal_922_20250322_062228.html) |
+| 1138 | all | 4.46 | 24 | 22/5/7 | 207 | 1501.5 | [meal_1138_20250327_101859.json](recipes/html/meal_1138_20250327_101859.html) |
+| 814 | all | 4.47 | 28 | 20/7/7 | 150 | 1272.5 | [meal_814_20250319_181305.json](recipes/html/meal_814_20250319_181305.html) |
+| 1174 | all | 4.50 | 25 | 26/2/6 | 348 | 2639.9 | [meal_1174_20250328_101834.json](recipes/html/meal_1174_20250328_101834.html) |
+| 1050 | all | 4.61 | 30 | 22/6/6 | 344 | 3069.4 | [meal_1050_20250325_042041.json](recipes/html/meal_1050_20250325_042041.html) |
+| 1042 | all | 4.68 | 16 | 18/8/8 | 369 | 1787.9 | [meal_1042_20250324_221730.json](recipes/html/meal_1042_20250324_221730.html) |
+| 974 | all | 4.68 | 29 | 23/4/7 | 271 | 2440.1 | [meal_974_20250323_082011.json](recipes/html/meal_974_20250323_082011.html) |
+| 815 | vegan | 4.71 | 30 | 24/3/7 | 75 | 1959.9 | [meal_815_20250319_181305.json](recipes/html/meal_815_20250319_181305.html) |
+| 542 | all | 4.74 | 19 | 13/14/4 | 255 | 1324.8 | [meal_542_20250315_181047.json](recipes/html/meal_542_20250315_181047.html) |
+| 1170 | all | 4.80 | 15 | 18/9/7 | 68 | 315.4 | [meal_1170_20250328_082326.json](recipes/html/meal_1170_20250328_082326.html) |
+| 1086 | all | 4.81 | 23 | 17/8/9 | 176 | 1215.5 | [meal_1086_20250326_042050.json](recipes/html/meal_1086_20250326_042050.html) |
+| 1046 | all | 4.84 | 25 | 22/5/7 | 174 | 1334.6 | [meal_1046_20250325_012137.json](recipes/html/meal_1046_20250325_012137.html) |
+| 926 | all | 4.85 | 26 | 24/3/7 | 261 | 2026.4 | [meal_926_20250322_082026.json](recipes/html/meal_926_20250322_082026.html) |
+| 1022 | all | 4.86 | 29 | 26/3/5 | 356 | 3137.3 | [meal_1022_20250324_101921.json](recipes/html/meal_1022_20250324_101921.html) |
+| 738 | all | 4.88 | 23 | 22/3/9 | 298 | 2054.6 | [meal_738_20250318_110751.json](recipes/html/meal_738_20250318_110751.html) |
+| 990 | all | 4.90 | 28 | 23/6/5 | 187 | 1590.4 | [meal_990_20250323_161919.json](recipes/html/meal_990_20250323_161919.html) |
+| 1199 | vegan | 4.95 | 15 | 22/4/8 | 383 | 3217.8 | [meal_1199_20250329_012023.json](recipes/html/meal_1199_20250329_012023.html) |
+| 1010 | all | 5.07 | 23 | 20/5/9 | 342 | 2368.1 | [meal_1010_20250324_030137.json](recipes/html/meal_1010_20250324_030137.html) |
+| 561 | vegan | 5.07 | 19 | 19/11/1 | 191 | 1583.8 | [meal_561_20250316_004624.json](recipes/html/meal_561_20250316_004624.html) |
+| 954 | all | 5.08 | 28 | 15/11/8 | 118 | 996.6 | [meal_954_20250322_221451.json](recipes/html/meal_954_20250322_221451.html) |
+| 758 | all | 5.14 | 11 | 20/7/7 | 37 | 131.2 | [meal_758_20250318_200902.json](recipes/html/meal_758_20250318_200902.html) |
+| 874 | all | 5.20 | 29 | 18/7/9 | 320 | 2858.7 | [meal_874_20250321_025715.json](recipes/html/meal_874_20250321_025715.html) |
+| 683 | all | 5.20 | 18 | 16/13/2 | 297 | 1466.9 | [meal_683_20250317_190721.json](recipes/html/meal_683_20250317_190721.html) |
+| 819 | vegan | 5.21 | 14 | 21/6/7 | 70 | 583.3 | [meal_819_20250319_201011.json](recipes/html/meal_819_20250319_201011.html) |
+| 754 | all | 5.24 | 25 | 24/5/5 | 222 | 1721.0 | [meal_754_20250318_181254.json](recipes/html/meal_754_20250318_181254.html) |
+| 1158 | all | 5.27 | 26 | 19/4/11 | 375 | 2929.5 | [meal_1158_20250328_012056.json](recipes/html/meal_1158_20250328_012056.html) |
+| 1006 | all | 5.33 | 15 | 18/8/8 | 264 | 1253.7 | [meal_1006_20250324_012256.json](recipes/html/meal_1006_20250324_012256.html) |
+| 743 | vegan | 5.36 | 17 | 20/6/8 | 259 | 1980.5 | [meal_743_20250318_131927.json](recipes/html/meal_743_20250318_131927.html) |
+| 795 | vegan | 5.37 | 28 | 24/5/5 | 128 | 2439.1 | [meal_795_20250319_091002.json](recipes/html/meal_795_20250319_091002.html) |
+| 611 | all | 5.37 | 17 | 14/12/5 | 129 | 599.0 | [meal_611_20250316_181146.json](recipes/html/meal_611_20250316_181146.html) |
+| 1074 | all | 5.39 | 26 | 21/6/7 | 192 | 1496.2 | [meal_1074_20250325_201946.json](recipes/html/meal_1074_20250325_201946.html) |
+| 950 | all | 5.46 | 13 | 26/3/5 | 194 | 769.8 | [meal_950_20250322_201727.json](recipes/html/meal_950_20250322_201727.html) |
+| 871 | vegan | 5.47 | 20 | 17/8/9 | 374 | 3792.0 | [meal_871_20250321_012110.json](recipes/html/meal_871_20250321_012110.html) |
+| 970 | all | 5.48 | 23 | 21/6/7 | 259 | 1773.3 | [meal_970_20250323_062241.json](recipes/html/meal_970_20250323_062241.html) |
+| 1082 | all | 5.52 | 24 | 19/7/8 | 271 | 1979.6 | [meal_1082_20250326_012115.json](recipes/html/meal_1082_20250326_012115.html) |
+| 524 | all | 5.53 | 19 | 16/12/3 | 82 | 430.4 | [meal_524_20250315_121426.json](recipes/html/meal_524_20250315_121426.html) |
+| 551 | all | 5.66 | 19 | 14/14/3 | 58 | 299.6 | [meal_551_20250315_210816.json](recipes/html/meal_551_20250315_210816.html) |
+| 1130 | all | 5.73 | 25 | 21/7/6 | 256 | 1967.4 | [meal_1130_20250327_062459.json](recipes/html/meal_1130_20250327_062459.html) |
+| 878 | all | 5.74 | 23 | 17/12/5 | 63 | 441.0 | [meal_878_20250321_062615.json](recipes/html/meal_878_20250321_062615.html) |
+| 680 | all | 5.74 | 13 | 15/14/2 | 206 | 729.7 | [meal_680_20250317_181244.json](recipes/html/meal_680_20250317_181244.html) |
+| 596 | all | 5.88 | 18 | 16/13/2 | 252 | 1258.6 | [meal_596_20250316_131358.json](recipes/html/meal_596_20250316_131358.html) |
+| 618 | vegan | 5.88 | 10 | 19/10/2 | 285 | 870.7 | [meal_618_20250316_200830.json](recipes/html/meal_618_20250316_200830.html) |
+| 1143 | vegan | 5.89 | 21 | 21/9/4 | 120 | 1634.9 | [meal_1143_20250327_123552.json](recipes/html/meal_1143_20250327_123552.html) |
+| 978 | all | 5.92 | 22 | 21/8/5 | 310 | 2062.7 | [meal_978_20250323_101632.json](recipes/html/meal_978_20250323_101632.html) |
+| 1055 | vegan | 6.03 | 20 | 16/7/11 | 259 | 2495.7 | [meal_1055_20250325_062542.json](recipes/html/meal_1055_20250325_062542.html) |
+| 629 | all | 6.05 | 15 | 17/12/2 | 108 | 435.3 | [meal_629_20250317_004431.json](recipes/html/meal_629_20250317_004431.html) |
+| 802 | all | 6.10 | 22 | 17/9/8 | 92 | 616.2 | [meal_802_20250319_131927.json](recipes/html/meal_802_20250319_131927.html) |
+| 641 | all | 6.13 | 20 | 18/12/1 | 140 | 763.3 | [meal_641_20250317_050957.json](recipes/html/meal_641_20250317_050957.html) |
+| 1047 | vegan | 6.18 | 26 | 22/6/6 | 338 | 4028.3 | [meal_1047_20250325_012137.json](recipes/html/meal_1047_20250325_012137.html) |
+| 1142 | all | 6.25 | 17 | 19/7/8 | 171 | 874.7 | [meal_1142_20250327_123552.json](recipes/html/meal_1142_20250327_123552.html) |
+| 477 | vegan | 6.28 | 15 | 19/11/1 | 288 | 1393.6 | [meal_477_20250314_190656.json](recipes/html/meal_477_20250314_190656.html) |
+| 971 | vegan | 6.29 | 29 | 21/6/7 | 172 | 3251.0 | [meal_971_20250323_062241.json](recipes/html/meal_971_20250323_062241.html) |
+| 862 | all | 6.30 | 15 | 19/7/8 | 103 | 470.1 | [meal_862_20250320_181241.json](recipes/html/meal_862_20250320_181241.html) |
+| 668 | all | 6.30 | 16 | 13/15/3 | 172 | 744.7 | [meal_668_20250317_140932.json](recipes/html/meal_668_20250317_140932.html) |
+| 751 | vegan | 6.33 | 27 | 17/9/8 | 34 | 1728.6 | [meal_751_20250318_161133.json](recipes/html/meal_751_20250318_161133.html) |
+| 843 | vegan | 6.35 | 15 | 12/10/12 | 350 | 3010.2 | [meal_843_20250320_090942.json](recipes/html/meal_843_20250320_090942.html) |
+| 1019 | vegan | 6.37 | 23 | 19/7/8 | 365 | 2912.9 | [meal_1019_20250324_082403.json](recipes/html/meal_1019_20250324_082403.html) |
+| 782 | all | 6.40 | 28 | 22/6/6 | 114 | 978.7 | [meal_782_20250319_050934.json](recipes/html/meal_782_20250319_050934.html) |
+| 533 | all | 6.40 | 13 | 17/12/2 | 295 | 1035.8 | [meal_533_20250315_150732.json](recipes/html/meal_533_20250315_150732.html) |
+| 665 | all | 6.41 | 17 | 16/13/2 | 39 | 184.4 | [meal_665_20250317_131950.json](recipes/html/meal_665_20250317_131950.html) |
+| 1111 | vegan | 6.41 | 16 | 17/9/8 | 342 | 4592.7 | [meal_1111_20250326_162311.json](recipes/html/meal_1111_20250326_162311.html) |
+| 894 | all | 6.44 | 17 | 19/7/8 | 137 | 702.4 | [meal_894_20250321_141622.json](recipes/html/meal_894_20250321_141622.html) |
+| 501 | vegan | 6.45 | 19 | 18/12/1 | 292 | 1656.1 | [meal_501_20250315_041030.json](recipes/html/meal_501_20250315_041030.html) |
+| 946 | all | 6.47 | 29 | 17/6/11 | 127 | 1120.9 | [meal_946_20250322_182133.json](recipes/html/meal_946_20250322_182133.html) |
+| 858 | all | 6.47 | 12 | 18/10/6 | 348 | 1299.4 | [meal_858_20250320_161131.json](recipes/html/meal_858_20250320_161131.html) |
+| 787 | vegan | 6.48 | 29 | 20/7/7 | 144 | 2622.2 | [meal_787_20250319_061306.json](recipes/html/meal_787_20250319_061306.html) |
+| 564 | vegan | 6.51 | 18 | 16/13/2 | 294 | 1458.6 | [meal_564_20250316_022129.json](recipes/html/meal_564_20250316_022129.html) |
+| 1154 | all | 6.54 | 19 | 17/7/10 | 346 | 1973.9 | [meal_1154_20250327_221628.json](recipes/html/meal_1154_20250327_221628.html) |
+| 608 | all | 6.56 | 20 | 16/13/2 | 80 | 440.8 | [meal_608_20250316_170702.json](recipes/html/meal_608_20250316_170702.html) |
+| 890 | all | 6.56 | 20 | 19/6/9 | 331 | 2002.7 | [meal_890_20250321_123417.json](recipes/html/meal_890_20250321_123417.html) |
+| 1031 | vegan | 6.59 | 29 | 20/7/7 | 139 | 2216.6 | [meal_1031_20250324_141748.json](recipes/html/meal_1031_20250324_141748.html) |
+| 826 | all | 6.59 | 12 | 16/9/9 | 125 | 467.5 | [meal_826_20250320_004218.json](recipes/html/meal_826_20250320_004218.html) |
+| 506 | all | 6.63 | 18 | 17/13/1 | 75 | 366.6 | [meal_506_20250315_061139.json](recipes/html/meal_506_20250315_061139.html) |
+| 1078 | all | 6.65 | 12 | 17/10/7 | 331 | 1212.7 | [meal_1078_20250325_221747.json](recipes/html/meal_1078_20250325_221747.html) |
+| 1090 | all | 6.67 | 14 | 20/5/9 | 307 | 1300.0 | [meal_1090_20250326_062501.json](recipes/html/meal_1090_20250326_062501.html) |
+| 750 | all | 6.68 | 29 | 17/9/8 | 164 | 1453.0 | [meal_750_20250318_161133.json](recipes/html/meal_750_20250318_161133.html) |
+| 684 | vegan | 6.73 | 14 | 17/13/1 | 236 | 2373.8 | [meal_684_20250317_190721.json](recipes/html/meal_684_20250317_190721.html) |
+| 647 | all | 6.75 | 19 | 18/11/2 | 189 | 967.1 | [meal_647_20250317_070934.json](recipes/html/meal_647_20250317_070934.html) |
+| 1187 | vegan | 6.76 | 29 | 20/5/9 | 329 | 4706.3 | [meal_1187_20250328_162148.json](recipes/html/meal_1187_20250328_162148.html) |
+| 746 | all | 6.77 | 28 | 17/8/9 | 96 | 837.7 | [meal_746_20250318_150957.json](recipes/html/meal_746_20250318_150957.html) |
+| 1134 | all | 6.78 | 20 | 19/7/8 | 324 | 1978.5 | [meal_1134_20250327_082237.json](recipes/html/meal_1134_20250327_082237.html) |
+| 982 | all | 6.80 | 14 | 11/13/10 | 106 | 454.1 | [meal_982_20250323_123132.json](recipes/html/meal_982_20250323_123132.html) |
+| 987 | vegan | 6.82 | 25 | 22/7/5 | 377 | 3288.7 | [meal_987_20250323_141421.json](recipes/html/meal_987_20250323_141421.html) |
+| 951 | vegan | 6.87 | 27 | 21/3/10 | 306 | 3275.0 | [meal_951_20250322_201727.json](recipes/html/meal_951_20250322_201727.html) |
+| 1030 | all | 6.88 | 22 | 19/8/7 | 152 | 1007.5 | [meal_1030_20250324_141748.json](recipes/html/meal_1030_20250324_141748.html) |
+| 590 | all | 6.96 | 15 | 18/12/1 | 246 | 1008.1 | [meal_590_20250316_110726.json](recipes/html/meal_590_20250316_110726.html) |
+| 1110 | all | 7.03 | 26 | 20/8/6 | 359 | 2885.3 | [meal_1110_20250326_162311.json](recipes/html/meal_1110_20250326_162311.html) |
+| 584 | all | 7.11 | 9 | 14/14/3 | 286 | 716.6 | [meal_584_20250316_090802.json](recipes/html/meal_584_20250316_090802.html) |
+| 491 | all | 7.12 | 17 | 16/13/2 | 183 | 842.9 | [meal_491_20250315_004138.json](recipes/html/meal_491_20250315_004138.html) |
+| 834 | all | 7.13 | 29 | 10/11/13 | 60 | 532.2 | [meal_834_20250320_050929.json](recipes/html/meal_834_20250320_050929.html) |
+| 1179 | vegan | 7.15 | 26 | 17/7/10 | 330 | 3041.2 | [meal_1179_20250328_123436.json](recipes/html/meal_1179_20250328_123436.html) |
+| 986 | all | 7.15 | 16 | 17/8/9 | 83 | 409.2 | [meal_986_20250323_141421.json](recipes/html/meal_986_20250323_141421.html) |
+| 1035 | vegan | 7.15 | 21 | 19/7/8 | 336 | 4127.5 | [meal_1035_20250324_162318.json](recipes/html/meal_1035_20250324_162318.html) |
+| 534 | vegan | 7.19 | 19 | 17/13/1 | 299 | 2566.9 | [meal_534_20250315_150732.json](recipes/html/meal_534_20250315_150732.html) |
+| 1054 | all | 7.21 | 10 | 15/7/12 | 300 | 916.7 | [meal_1054_20250325_062542.json](recipes/html/meal_1054_20250325_062542.html) |
+| 886 | all | 7.21 | 26 | 17/8/9 | 309 | 2423.3 | [meal_886_20250321_101835.json](recipes/html/meal_886_20250321_101835.html) |
+| 1146 | all | 7.23 | 16 | 19/8/7 | 204 | 997.1 | [meal_1146_20250327_162245.json](recipes/html/meal_1146_20250327_162245.html) |
+| 938 | all | 7.24 | 21 | 14/13/7 | 153 | 973.5 | [meal_938_20250322_141557.json](recipes/html/meal_938_20250322_141557.html) |
+| 811 | vegan | 7.24 | 30 | 14/10/10 | 223 | 3922.5 | [meal_811_20250319_161116.json](recipes/html/meal_811_20250319_161116.html) |
+| 1011 | vegan | 7.30 | 19 | 26/4/4 | 370 | 4508.0 | [meal_1011_20250324_030137.json](recipes/html/meal_1011_20250324_030137.html) |
+| 891 | vegan | 7.30 | 17 | 14/11/9 | 127 | 2653.2 | [meal_891_20250321_123417.json](recipes/html/meal_891_20250321_123417.html) |
+| 770 | all | 7.32 | 26 | 18/9/7 | 58 | 467.0 | [meal_770_20250319_004257.json](recipes/html/meal_770_20250319_004257.html) |
+| 958 | all | 7.37 | 28 | 18/9/7 | 133 | 1129.9 | [meal_958_20250323_012546.json](recipes/html/meal_958_20250323_012546.html) |
+| 962 | all | 7.41 | 22 | 16/9/9 | 134 | 925.2 | [meal_962_20250323_030150.json](recipes/html/meal_962_20250323_030150.html) |
+| 934 | all | 7.41 | 27 | 19/8/7 | 74 | 611.8 | [meal_934_20250322_123059.json](recipes/html/meal_934_20250322_123059.html) |
+| 818 | all | 7.42 | 16 | 14/9/11 | 59 | 290.0 | [meal_818_20250319_201011.json](recipes/html/meal_818_20250319_201011.html) |
+| 606 | vegan | 7.47 | 15 | 15/15/1 | 220 | 1098.9 | [meal_606_20250316_160913.json](recipes/html/meal_606_20250316_160913.html) |
+| 602 | all | 7.47 | 18 | 17/13/1 | 54 | 266.1 | [meal_602_20250316_150738.json](recipes/html/meal_602_20250316_150738.html) |
+| 1059 | vegan | 7.52 | 29 | 18/6/10 | 298 | 2867.8 | [meal_1059_20250325_101925.json](recipes/html/meal_1059_20250325_101925.html) |
+| 648 | vegan | 7.53 | 16 | 15/16/0 | 45 | 1158.7 | [meal_648_20250317_070934.json](recipes/html/meal_648_20250317_070934.html) |
+| 975 | vegan | 7.59 | 12 | 20/7/7 | 166 | 3058.7 | [meal_975_20250323_082011.json](recipes/html/meal_975_20250323_082011.html) |
+| 650 | all | 7.61 | 16 | 17/13/1 | 173 | 755.2 | [meal_650_20250317_081325.json](recipes/html/meal_650_20250317_081325.html) |
+| 866 | all | 7.62 | 17 | 16/7/11 | 167 | 865.8 | [meal_866_20250320_200953.json](recipes/html/meal_866_20250320_200953.html) |
+| 488 | all | 7.63 | 17 | 10/18/3 | 230 | 1073.2 | [meal_488_20250314_230837.json](recipes/html/meal_488_20250314_230837.html) |
+| 786 | all | 7.69 | 20 | 14/10/10 | 218 | 1344.7 | [meal_786_20250319_061306.json](recipes/html/meal_786_20250319_061306.html) |
+| 775 | vegan | 7.73 | 16 | 18/9/7 | 184 | 1593.2 | [meal_775_20250319_021726.json](recipes/html/meal_775_20250319_021726.html) |
+| 870 | all | 7.73 | 21 | 19/8/7 | 246 | 1543.6 | [meal_870_20250321_012110.json](recipes/html/meal_870_20250321_012110.html) |
+| 1191 | vegan | 7.78 | 22 | 23/6/5 | 296 | 2423.8 | [meal_1191_20250328_182502.json](recipes/html/meal_1191_20250328_182502.html) |
+| 482 | all | 7.79 | 14 | 13/15/3 | 91 | 350.4 | [meal_482_20250314_210740.json](recipes/html/meal_482_20250314_210740.html) |
+| 560 | all | 7.83 | 11 | 16/13/2 | 209 | 622.2 | [meal_560_20250316_004624.json](recipes/html/meal_560_20250316_004624.html) |
+| 1194 | all | 7.83 | 14 | 17/6/11 | 373 | 1587.0 | [meal_1194_20250328_201931.json](recipes/html/meal_1194_20250328_201931.html) |
+| 991 | vegan | 7.85 | 18 | 20/9/5 | 224 | 2815.4 | [meal_991_20250323_161919.json](recipes/html/meal_991_20250323_161919.html) |
+| 465 | vegan | 7.88 | 13 | 16/12/3 | 266 | 1024.9 | [meal_465_20250314_150850.json](recipes/html/meal_465_20250314_150850.html) |
+| 1075 | vegan | 7.88 | 14 | 20/7/7 | 325 | 2863.2 | [meal_1075_20250325_201946.json](recipes/html/meal_1075_20250325_201946.html) |
+| 575 | all | 7.89 | 8 | 12/15/4 | 149 | 330.1 | [meal_575_20250316_061121.json](recipes/html/meal_575_20250316_061121.html) |
+| 609 | vegan | 7.92 | 15 | 14/15/2 | 260 | 1493.9 | [meal_609_20250316_170702.json](recipes/html/meal_609_20250316_170702.html) |
+| 1159 | vegan | 7.96 | 14 | 18/10/6 | 344 | 4379.0 | [meal_1159_20250328_012056.json](recipes/html/meal_1159_20250328_012056.html) |
+| 882 | all | 8.01 | 23 | 18/8/8 | 302 | 2151.9 | [meal_882_20250321_082155.json](recipes/html/meal_882_20250321_082155.html) |
+| 1182 | all | 8.02 | 23 | 12/10/12 | 283 | 1978.7 | [meal_1182_20250328_141645.json](recipes/html/meal_1182_20250328_141645.html) |
+| 567 | vegan | 8.02 | 13 | 14/14/3 | 148 | 607.4 | [meal_567_20250316_032356.json](recipes/html/meal_567_20250316_032356.html) |
+| 672 | vegan | 8.04 | 11 | 15/14/2 | 82 | 646.5 | [meal_672_20250317_150939.json](recipes/html/meal_672_20250317_150939.html) |
+| 620 | all | 8.07 | 13 | 15/14/2 | 100 | 353.3 | [meal_620_20250316_210715.json](recipes/html/meal_620_20250316_210715.html) |
+| 548 | all | 8.08 | 19 | 12/16/3 | 116 | 603.9 | [meal_548_20250315_200848.json](recipes/html/meal_548_20250315_200848.html) |
+| 995 | vegan | 8.11 | 12 | 16/10/8 | 212 | 1102.2 | [meal_995_20250323_182159.json](recipes/html/meal_995_20250323_182159.html) |
+| 479 | all | 8.12 | 11 | 16/13/2 | 124 | 381.4 | [meal_479_20250314_200941.json](recipes/html/meal_479_20250314_200941.html) |
+| 480 | vegan | 8.13 | 14 | 14/15/2 | 25 | 477.4 | [meal_480_20250314_200941.json](recipes/html/meal_480_20250314_200941.html) |
+| 485 | all | 8.14 | 18 | 15/15/1 | 44 | 219.3 | [meal_485_20250314_220806.json](recipes/html/meal_485_20250314_220806.html) |
+| 594 | vegan | 8.17 | 17 | 16/14/1 | 225 | 1374.1 | [meal_594_20250316_121410.json](recipes/html/meal_594_20250316_121410.html) |
+| 615 | vegan | 8.19 | 11 | 16/13/2 | 114 | 757.6 | [meal_615_20250316_190614.json](recipes/html/meal_615_20250316_190614.html) |
+| 591 | vegan | 8.19 | 16 | 15/13/3 | 162 | 1707.9 | [meal_591_20250316_110726.json](recipes/html/meal_591_20250316_110726.html) |
+| 790 | all | 8.19 | 13 | 18/8/8 | 114 | 462.7 | [meal_790_20250319_081218.json](recipes/html/meal_790_20250319_081218.html) |
+| 522 | vegan | 8.20 | 15 | 11/16/4 | 129 | 1323.8 | [meal_522_20250315_110630.json](recipes/html/meal_522_20250315_110630.html) |
+| 838 | all | 8.21 | 10 | 17/10/7 | 261 | 792.6 | [meal_838_20250320_070918.json](recipes/html/meal_838_20250320_070918.html) |
+| 895 | vegan | 8.24 | 25 | 22/6/6 | 236 | 2469.4 | [meal_895_20250321_141622.json](recipes/html/meal_895_20250321_141622.html) |
+| 1162 | all | 8.24 | 13 | 17/6/11 | 206 | 829.6 | [meal_1162_20250328_042115.json](recipes/html/meal_1162_20250328_042115.html) |
+| 657 | vegan | 8.33 | 17 | 15/13/3 | 190 | 1218.2 | [meal_657_20250317_101012.json](recipes/html/meal_657_20250317_101012.html) |
+| 681 | vegan | 8.35 | 13 | 14/15/2 | 61 | 942.9 | [meal_681_20250317_181244.json](recipes/html/meal_681_20250317_181244.html) |
+| 903 | vegan | 8.36 | 20 | 15/9/10 | 290 | 2752.4 | [meal_903_20250321_182359.json](recipes/html/meal_903_20250321_182359.html) |
+| 492 | vegan | 8.40 | 12 | 20/10/1 | 268 | 1700.6 | [meal_492_20250315_004138.json](recipes/html/meal_492_20250315_004138.html) |
+| 762 | all | 8.40 | 20 | 18/8/8 | 107 | 647.4 | [meal_762_20250318_220758.json](recipes/html/meal_762_20250318_220758.html) |
+| 747 | vegan | 8.41 | 24 | 18/8/8 | 107 | 1632.3 | [meal_747_20250318_150957.json](recipes/html/meal_747_20250318_150957.html) |
+| 766 | all | 8.42 | 28 | 14/10/10 | 20 | 171.8 | [meal_766_20250318_230831.json](recipes/html/meal_766_20250318_230831.html) |
+| 822 | all | 8.44 | 18 | 16/9/9 | 139 | 757.4 | [meal_822_20250319_220813.json](recipes/html/meal_822_20250319_220813.html) |
+| 759 | vegan | 8.57 | 20 | 18/10/6 | 288 | 1916.3 | [meal_759_20250318_200902.json](recipes/html/meal_759_20250318_200902.html) |
+| 552 | vegan | 8.57 | 18 | 14/15/2 | 132 | 935.7 | [meal_552_20250315_210816.json](recipes/html/meal_552_20250315_210816.html) |
+| 459 | vegan | 8.58 | 12 | 9/18/4 | 234 | 1703.2 | [meal_459_20250314_131702.json](recipes/html/meal_459_20250314_131702.html) |
+| 468 | vegan | 8.63 | 17 | 15/14/2 | 31 | 461.4 | [meal_468_20250314_161039.json](recipes/html/meal_468_20250314_161039.html) |
+| 614 | all | 8.67 | 11 | 11/17/3 | 140 | 420.9 | [meal_614_20250316_190614.json](recipes/html/meal_614_20250316_190614.html) |
+| 525 | vegan | 8.68 | 17 | 9/18/4 | 225 | 1472.2 | [meal_525_20250315_121426.json](recipes/html/meal_525_20250315_121426.html) |
+| 507 | vegan | 8.69 | 14 | 12/16/3 | 198 | 1104.0 | [meal_507_20250315_061139.json](recipes/html/meal_507_20250315_061139.html) |
+| 554 | all | 8.70 | 5 | 13/15/3 | 124 | 179.7 | [meal_554_20250315_220735.json](recipes/html/meal_554_20250315_220735.html) |
+| 835 | vegan | 8.74 | 15 | 18/6/10 | 215 | 1514.1 | [meal_835_20250320_050929.json](recipes/html/meal_835_20250320_050929.html) |
+| 662 | all | 8.76 | 10 | 15/15/1 | 95 | 266.4 | [meal_662_20250317_121655.json](recipes/html/meal_662_20250317_121655.html) |
+| 578 | all | 8.77 | 18 | 14/15/2 | 42 | 212.0 | [meal_578_20250316_070754.json](recipes/html/meal_578_20250316_070754.html) |
+| 902 | all | 8.78 | 11 | 17/8/9 | 292 | 987.3 | [meal_902_20250321_182359.json](recipes/html/meal_902_20250321_182359.html) |
+| 585 | vegan | 8.79 | 8 | 13/16/2 | 33 | 788.9 | [meal_585_20250316_090802.json](recipes/html/meal_585_20250316_090802.html) |
+| 453 | vegan | 8.79 | 20 | 14/15/2 | 45 | 984.2 | [meal_453_20250314_110745.json](recipes/html/meal_453_20250314_110745.html) |
+| 498 | vegan | 8.95 | 15 | 14/14/3 | 151 | 1138.9 | [meal_498_20250315_031731.json](recipes/html/meal_498_20250315_031731.html) |
+| 1062 | all | 8.97 | 18 | 19/10/5 | 395 | 2151.4 | [meal_1062_20250325_123521.json](recipes/html/meal_1062_20250325_123521.html) |
+| 623 | all | 9.01 | 15 | 13/15/3 | 163 | 650.1 | [meal_623_20250316_220732.json](recipes/html/meal_623_20250316_220732.html) |
+| 735 | vegan | 9.03 | 25 | 17/9/8 | 187 | 1489.3 | [meal_735_20250318_100949.json](recipes/html/meal_735_20250318_100949.html) |
+| 467 | all | 9.07 | 11 | 16/13/2 | 98 | 311.9 | [meal_467_20250314_161039.json](recipes/html/meal_467_20250314_161039.html) |
+| 1084 | wfpb | 9.10 | 28 | 19/9/6 | 363 | 5634.1 | [meal_1084_20250326_012115.json](recipes/html/meal_1084_20250326_012115.html) |
+| 959 | vegan | 9.18 | 18 | 17/7/10 | 340 | 2984.8 | [meal_959_20250323_012546.json](recipes/html/meal_959_20250323_012546.html) |
+| 1135 | vegan | 9.22 | 18 | 17/9/8 | 103 | 2545.8 | [meal_1135_20250327_082237.json](recipes/html/meal_1135_20250327_082237.html) |
+| 927 | vegan | 9.26 | 18 | 17/8/9 | 307 | 3683.9 | [meal_927_20250322_082026.json](recipes/html/meal_927_20250322_082026.html) |
+| 914 | all | 9.27 | 19 | 12/9/13 | 289 | 1651.0 | [meal_914_20250322_011917.json](recipes/html/meal_914_20250322_011917.html) |
+| 1094 | all | 9.29 | 17 | 20/9/5 | 340 | 1732.4 | [meal_1094_20250326_082316.json](recipes/html/meal_1094_20250326_082316.html) |
+| 483 | vegan | 9.31 | 11 | 13/16/2 | 103 | 654.8 | [meal_483_20250314_210740.json](recipes/html/meal_483_20250314_210740.html) |
+| 570 | vegan | 9.34 | 19 | 18/12/1 | 203 | 1424.0 | [meal_570_20250316_041018.json](recipes/html/meal_570_20250316_041018.html) |
+| 1167 | vegan | 9.34 | 26 | 17/8/9 | 158 | 1735.6 | [meal_1167_20250328_062521.json](recipes/html/meal_1167_20250328_062521.html) |
+| 774 | all | 9.41 | 14 | 19/9/6 | 162 | 696.2 | [meal_774_20250319_021726.json](recipes/html/meal_774_20250319_021726.html) |
+| 1163 | vegan | 9.45 | 23 | 17/7/10 | 170 | 2032.9 | [meal_1163_20250328_042115.json](recipes/html/meal_1163_20250328_042115.html) |
+| 879 | vegan | 9.50 | 23 | 17/7/10 | 337 | 2767.3 | [meal_879_20250321_062615.json](recipes/html/meal_879_20250321_062615.html) |
+| 1098 | all | 9.50 | 11 | 18/8/8 | 287 | 958.7 | [meal_1098_20250326_101905.json](recipes/html/meal_1098_20250326_101905.html) |
+| 600 | vegan | 9.51 | 12 | 12/16/3 | 289 | 1156.4 | [meal_600_20250316_140656.json](recipes/html/meal_600_20250316_140656.html) |
+| 572 | all | 9.54 | 17 | 15/13/3 | 148 | 691.1 | [meal_572_20250316_050827.json](recipes/html/meal_572_20250316_050827.html) |
+| 581 | all | 9.58 | 20 | 13/15/3 | 64 | 351.3 | [meal_581_20250316_081048.json](recipes/html/meal_581_20250316_081048.html) |
+| 474 | vegan | 9.58 | 10 | 11/16/4 | 225 | 876.3 | [meal_474_20250314_181156.json](recipes/html/meal_474_20250314_181156.html) |
+| 466 | wfpb | 9.61 | 20 | 13/15/3 | 283 | 2524.3 | [meal_466_20250314_150850.json](recipes/html/meal_466_20250314_150850.html) |
+| 918 | all | 9.65 | 15 | 20/7/7 | 377 | 1711.3 | [meal_918_20250322_025318.json](recipes/html/meal_918_20250322_025318.html) |
+| 563 | all | 9.71 | 16 | 8/18/5 | 11 | 50.6 | [meal_563_20250316_022129.json](recipes/html/meal_563_20250316_022129.html) |
+| 646 | wfpb | 9.74 | 18 | 12/16/3 | 268 | 2962.9 | [meal_646_20250317_061341.json](recipes/html/meal_646_20250317_061341.html) |
+| 621 | vegan | 9.76 | 17 | 16/14/1 | 261 | 1541.6 | [meal_621_20250316_210715.json](recipes/html/meal_621_20250316_210715.html) |
+| 612 | vegan | 9.78 | 19 | 13/16/2 | 84 | 1028.8 | [meal_612_20250316_181146.json](recipes/html/meal_612_20250316_181146.html) |
+| 456 | vegan | 9.79 | 14 | 13/15/3 | 45 | 734.6 | [meal_456_20250314_121550.json](recipes/html/meal_456_20250314_121550.html) |
+| 607 | wfpb | 9.82 | 17 | 14/15/2 | 149 | 1801.0 | [meal_607_20250316_160913.json](recipes/html/meal_607_20250316_160913.html) |
+| 527 | all | 9.82 | 12 | 10/19/2 | 174 | 576.4 | [meal_527_20250315_131332.json](recipes/html/meal_527_20250315_131332.html) |
+| 1155 | vegan | 9.86 | 23 | 19/8/7 | 320 | 4188.5 | [meal_1155_20250327_221628.json](recipes/html/meal_1155_20250327_221628.html) |
+| 489 | vegan | 9.88 | 17 | 16/13/2 | 157 | 1798.6 | [meal_489_20250314_230837.json](recipes/html/meal_489_20250314_230837.html) |
+| 767 | vegan | 9.91 | 26 | 18/9/7 | 83 | 814.4 | [meal_767_20250318_230831.json](recipes/html/meal_767_20250318_230831.html) |
+| 932 | wfpb | 9.96 | 28 | 16/10/8 | 300 | 3709.9 | [meal_932_20250322_101745.json](recipes/html/meal_932_20250322_101745.html) |
+| 791 | vegan | 9.96 | 26 | 21/6/7 | 193 | 1993.8 | [meal_791_20250319_081218.json](recipes/html/meal_791_20250319_081218.html) |
+| 806 | all | 10.02 | 14 | 14/12/8 | 20 | 90.3 | [meal_806_20250319_150936.json](recipes/html/meal_806_20250319_150936.html) |
+| 557 | all | 10.05 | 9 | 17/13/1 | 207 | 505.5 | [meal_557_20250315_230748.json](recipes/html/meal_557_20250315_230748.html) |
+| 1123 | vegan | 10.06 | 24 | 18/8/8 | 275 | 3267.7 | [meal_1123_20250327_012051.json](recipes/html/meal_1123_20250327_012051.html) |
+| 1058 | all | 10.08 | 13 | 20/8/6 | 69 | 275.3 | [meal_1058_20250325_101925.json](recipes/html/meal_1058_20250325_101925.html) |
+| 935 | vegan | 10.09 | 16 | 13/10/11 | 392 | 2505.8 | [meal_935_20250322_123059.json](recipes/html/meal_935_20250322_123059.html) |
+| 1175 | vegan | 10.09 | 13 | 16/11/7 | 64 | 2895.6 | [meal_1175_20250328_101834.json](recipes/html/meal_1175_20250328_101834.html) |
+| 875 | vegan | 10.09 | 24 | 16/9/9 | 335 | 5305.9 | [meal_875_20250321_025715.json](recipes/html/meal_875_20250321_025715.html) |
+| 1122 | all | 10.10 | 10 | 16/12/6 | 386 | 1209.4 | [meal_1122_20250327_012051.json](recipes/html/meal_1122_20250327_012051.html) |
+| 637 | wfpb | 10.13 | 19 | 13/14/4 | 154 | 1371.8 | [meal_637_20250317_032341.json](recipes/html/meal_637_20250317_032341.html) |
+| 916 | wfpb | 10.18 | 28 | 19/8/7 | 282 | 4432.3 | [meal_916_20250322_011917.json](recipes/html/meal_916_20250322_011917.html) |
+| 510 | vegan | 10.18 | 10 | 11/16/4 | 53 | 919.2 | [meal_510_20250315_070747.json](recipes/html/meal_510_20250315_070747.html) |
+| 1018 | all | 10.18 | 13 | 14/12/8 | 85 | 340.9 | [meal_1018_20250324_082403.json](recipes/html/meal_1018_20250324_082403.html) |
+| 604 | wfpb | 10.20 | 17 | 15/15/1 | 215 | 2135.8 | [meal_604_20250316_150738.json](recipes/html/meal_604_20250316_150738.html) |
+| 494 | all | 10.21 | 20 | 15/14/2 | 282 | 1562.2 | [meal_494_20250315_021327.json](recipes/html/meal_494_20250315_021327.html) |
+| 458 | all | 10.24 | 11 | 13/14/4 | 294 | 912.7 | [meal_458_20250314_131702.json](recipes/html/meal_458_20250314_131702.html) |
+| 654 | vegan | 10.28 | 18 | 11/17/3 | 18 | 147.8 | [meal_654_20250317_091100.json](recipes/html/meal_654_20250317_091100.html) |
+| 677 | all | 10.29 | 9 | 12/15/4 | 62 | 155.3 | [meal_677_20250317_170813.json](recipes/html/meal_677_20250317_170813.html) |
+| 632 | all | 10.33 | 10 | 10/18/3 | 55 | 154.5 | [meal_632_20250317_021908.json](recipes/html/meal_632_20250317_021908.html) |
+| 942 | all | 10.33 | 20 | 22/6/6 | 181 | 1098.8 | [meal_942_20250322_161920.json](recipes/html/meal_942_20250322_161920.html) |
+| 846 | all | 10.34 | 14 | 22/8/4 | 165 | 697.2 | [meal_846_20250320_110758.json](recipes/html/meal_846_20250320_110758.html) |
+| 643 | wfpb | 10.35 | 13 | 15/14/2 | 234 | 1832.3 | [meal_643_20250317_050957.json](recipes/html/meal_643_20250317_050957.html) |
+| 911 | vegan | 10.36 | 22 | 19/8/7 | 315 | 4486.2 | [meal_911_20250321_221626.json](recipes/html/meal_911_20250321_221626.html) |
+| 645 | vegan | 10.38 | 19 | 10/17/4 | 269 | 1673.6 | [meal_645_20250317_061341.json](recipes/html/meal_645_20250317_061341.html) |
