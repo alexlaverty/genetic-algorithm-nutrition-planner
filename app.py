@@ -619,9 +619,9 @@ def generate_index():
 </html>
 """
 
-    # Save both files
-    with open("README.md", "w") as f:
-        f.write(markdown)
+    # # Save both files
+    # with open("README.md", "w") as f:
+    #     f.write(markdown)
 
     with open("recipes/html/index.html", "w") as f:
         f.write(html)
