@@ -1,0 +1,245 @@
+{
+  "meal_info": {
+    "run_number": 1270,
+    "diet_type": "all",
+    "target_percentage": 100.0,
+    "optimization_score": 8.439198906574644,
+    "generations": 124,
+    "number_of_foods": 12,
+    "execution_time_seconds": 467.4489166736603,
+    "date": "2025-03-31",
+    "penalties": {
+      "under_rdi": 2.195003856190967,
+      "over_rdi": 0.3436154390995316,
+      "over_ul": 2.1536330209470034,
+      "water_soluble": 0.16361046661136708,
+      "fat_soluble": 0.302094623902273
+    }
+  },
+  "food_quantities": {
+    "Potato, coliban, peeled, boiled, drained": "281.9g",
+    "Pastry, puff, vegetable oil, commercial, raw": "268.6g",
+    "Yoghurt, flavoured, low fat (approx 2%)": "241.1g",
+    "Oat beverage, fluid, added calcium": "226.9g",
+    "Muffin, English style, from white flour, added dried fruit, toasted": "141.0g",
+    "Chicken, nugget, purchased from fast food chain, grilled": "134.9g",
+    "Beer, full strength (alcohol 4-4.9% v/v), carbohydrate modified": "129.7g",
+    "Pork, scotch roast, untrimmed, raw": "119.6g",
+    "Pork, forequarter chop, lean, BBQ'd, no added fat": "76.4g",
+    "Salmon, Pacific King, fillet, steamed, no added fat": "32.1g",
+    "Trout, rainbow, aquacultured, steamed, no added fat": "23.5g",
+    "Tahini, sesame seed pulp": "8.9g"
+  },
+  "nutrition_profile": {
+    "Energy with dietary fibre, equated (kJ)": {
+      "amount": "10728.0",
+      "meal_percentage": "98.6%",
+      "daily_percentage": "98.6%",
+      "status": "OK"
+    },
+    "Protein (g)": {
+      "amount": "122.6g",
+      "meal_percentage": "134.7%",
+      "daily_percentage": "134.7%",
+      "status": "OK"
+    },
+    "Fat, total (g)": {
+      "amount": "99.3g",
+      "meal_percentage": "114.2%",
+      "daily_percentage": "114.2%",
+      "status": "OK"
+    },
+    "Available carbohydrate, without sugar alcohols (g)": {
+      "amount": "272.5g",
+      "meal_percentage": "83.8%",
+      "daily_percentage": "83.8%",
+      "status": "OK"
+    },
+    "Calcium (Ca) (mg)": {
+      "amount": "1004.8mg",
+      "meal_percentage": "100.5%",
+      "daily_percentage": "100.5%",
+      "status": "OK"
+    },
+    "Chloride (Cl) (mg)": {
+      "amount": "175.7mg",
+      "meal_percentage": "7.6%",
+      "daily_percentage": "7.6%",
+      "status": "LOW"
+    },
+    "Chromium (Cr) (ug)": {
+      "amount": "35.4\u03bcg",
+      "meal_percentage": "101.2%",
+      "daily_percentage": "101.2%",
+      "status": "OK"
+    },
+    "Copper (Cu) (mg)": {
+      "amount": "0.7mg",
+      "meal_percentage": "82.0%",
+      "daily_percentage": "82.0%",
+      "status": "OK"
+    },
+    "Total dietary fibre (g)": {
+      "amount": "24.2g",
+      "meal_percentage": "63.7%",
+      "daily_percentage": "63.7%",
+      "status": "LOW"
+    },
+    "Total folates (ug)": {
+      "amount": "655.2\u03bcg",
+      "meal_percentage": "163.8%",
+      "daily_percentage": "163.8%",
+      "status": "HIGH"
+    },
+    "Iodine (I) (ug)": {
+      "amount": "140.0\u03bcg",
+      "meal_percentage": "93.3%",
+      "daily_percentage": "93.3%",
+      "status": "OK"
+    },
+    "Iron (Fe) (mg)": {
+      "amount": "7.5mg",
+      "meal_percentage": "94.1%",
+      "daily_percentage": "94.1%",
+      "status": "OK"
+    },
+    "Magnesium (Mg) (mg)": {
+      "amount": "277.5mg",
+      "meal_percentage": "66.1%",
+      "daily_percentage": "66.1%",
+      "status": "LOW"
+    },
+    "Manganese (Mn) (mg)": {
+      "amount": "1.6mg",
+      "meal_percentage": "68.3%",
+      "daily_percentage": "68.3%",
+      "status": "LOW"
+    },
+    "Molybdenum (Mo) (ug)": {
+      "amount": "42.0\u03bcg",
+      "meal_percentage": "93.3%",
+      "daily_percentage": "93.3%",
+      "status": "OK"
+    },
+    "Phosphorus (P) (mg)": {
+      "amount": "1826.2mg",
+      "meal_percentage": "260.9%",
+      "daily_percentage": "260.9%",
+      "status": "HIGH"
+    },
+    "Potassium (K) (mg)": {
+      "amount": "3398.5mg",
+      "meal_percentage": "100.0%",
+      "daily_percentage": "100.0%",
+      "status": "OK"
+    },
+    "Selenium (Se) (ug)": {
+      "amount": "102.2\u03bcg",
+      "meal_percentage": "185.7%",
+      "daily_percentage": "185.7%",
+      "status": "HIGH"
+    },
+    "Sodium (Na) (mg)": {
+      "amount": "2586.0mg",
+      "meal_percentage": "172.4%",
+      "daily_percentage": "172.4%",
+      "status": "HIGH"
+    },
+    "Vitamin A retinol equivalents (ug)": {
+      "amount": "144.9\u03bcg",
+      "meal_percentage": "16.1%",
+      "daily_percentage": "16.1%",
+      "status": "LOW"
+    },
+    "Thiamin (B1) (mg)": {
+      "amount": "2.5mg",
+      "meal_percentage": "212.0%",
+      "daily_percentage": "212.0%",
+      "status": "HIGH"
+    },
+    "Cobalamin (B12) (ug)": {
+      "amount": "2.9\u03bcg",
+      "meal_percentage": "119.4%",
+      "daily_percentage": "119.4%",
+      "status": "OK"
+    },
+    "Riboflavin (B2) (mg)": {
+      "amount": "1.3mg",
+      "meal_percentage": "101.6%",
+      "daily_percentage": "101.6%",
+      "status": "OK"
+    },
+    "Niacin (B3) (mg)": {
+      "amount": "31.9mg",
+      "meal_percentage": "199.7%",
+      "daily_percentage": "199.7%",
+      "status": "HIGH"
+    },
+    "Pantothenic acid (B5) (mg)": {
+      "amount": "4.8mg",
+      "meal_percentage": "95.9%",
+      "daily_percentage": "95.9%",
+      "status": "OK"
+    },
+    "Pyridoxine (B6) (mg)": {
+      "amount": "2.3mg",
+      "meal_percentage": "135.6%",
+      "daily_percentage": "135.6%",
+      "status": "OK"
+    },
+    "Biotin (B7) (ug)": {
+      "amount": "12.7\u03bcg",
+      "meal_percentage": "42.3%",
+      "daily_percentage": "42.3%",
+      "status": "LOW"
+    },
+    "Vitamin C (mg)": {
+      "amount": "31.6mg",
+      "meal_percentage": "35.2%",
+      "daily_percentage": "35.2%",
+      "status": "LOW"
+    },
+    "Vitamin D3 equivalents (ug)": {
+      "amount": "10.0\u03bcg",
+      "meal_percentage": "66.9%",
+      "daily_percentage": "66.9%",
+      "status": "LOW"
+    },
+    "Vitamin E (mg)": {
+      "amount": "24.3mg",
+      "meal_percentage": "162.2%",
+      "daily_percentage": "162.2%",
+      "status": "HIGH"
+    },
+    "Zinc (Zn) (mg)": {
+      "amount": "11.5mg",
+      "meal_percentage": "105.0%",
+      "daily_percentage": "105.0%",
+      "status": "OK"
+    },
+    "Total saturated fatty acids, equated (g)": {
+      "amount": "37.4g",
+      "meal_percentage": "169.8%",
+      "daily_percentage": "169.8%",
+      "status": "HIGH"
+    },
+    "Cholesterol (mg)": {
+      "amount": "241.6mg",
+      "meal_percentage": "80.5%",
+      "daily_percentage": "80.5%",
+      "status": "OK"
+    },
+    "Total long chain omega 3 fatty acids, equated (mg)": {
+      "amount": "1771.8mg",
+      "meal_percentage": "110.7%",
+      "daily_percentage": "110.7%",
+      "status": "OK"
+    }
+  },
+  "summary": {
+    "nutrients_at_good_levels": 18,
+    "nutrients_below_target": 8,
+    "nutrients_above_target": 8,
+    "total_nutrients": 34
+  }
+}
