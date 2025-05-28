@@ -1,9 +1,9 @@
 name: Optimize Nutrition
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 */2 * * *' # Run every 2 hours
+# on:
+#   workflow_dispatch:
+#   schedule:
+#     - cron: '0 */2 * * *' # Run every 2 hours
 
 jobs:
   optimize:
